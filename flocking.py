@@ -1,3 +1,7 @@
+from enum import Enum, auto
+
+import pygame as pg
+from pygame.math import Vector2
 from vi import Agent, Simulation
 from vi.config import Config, dataclass, deserialize
 
@@ -23,7 +27,11 @@ class Bird(Agent):
     def update(self):
         pass
 
+        
     def change_position(self):
+        # Pac-man-style teleport to the other end of the screen when trying to escape
+        self.there_is_no_escape()
+        #YOUR CODE HERE -----------
         # Get the neighbours of the boid
         neighbours = self.in_proximity_accuracy().collect_set()
         # If the set in empty, wandering behaviour
@@ -45,6 +53,7 @@ class Bird(Agent):
                 self.move.normalize() * self.config.maxVelocity
             # Change position
             self.pos = self.pos * self.config.delta_time
+        #END CODE -----------------
 
     def alignment(self, neighbours):
         average = [0, 0]
@@ -64,16 +73,57 @@ class Bird(Agent):
         for i in neighbours:
             positions += i[0].pos
         fc = (positions / len(neighbours)) - self.pos
-
         return fc - self.move
+        
+
+class Selection(Enum):
+    ALIGNMENT = auto()
+    COHESION = auto()
+    SEPARATION = auto()
+
+
+class FlockingLive(Simulation):
+    selection: Selection = Selection.ALIGNMENT
+    config: FlockingConfig
+
+    def handle_event(self, by: float):
+        if self.selection == Selection.ALIGNMENT:
+            self.config.alignment_weight += by
+        elif self.selection == Selection.COHESION:
+            self.config.cohesion_weight += by
+        elif self.selection == Selection.SEPARATION:
+            self.config.separation_weight += by
+
+    def before_update(self):
+        super().before_update()
+
+        for event in pg.event.get():
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_UP:
+                    self.handle_event(by=0.1)
+                elif event.key == pg.K_DOWN:
+                    self.handle_event(by=-0.1)
+                elif event.key == pg.K_1:
+                    self.selection = Selection.ALIGNMENT
+                elif event.key == pg.K_2:
+                    self.selection = Selection.COHESION
+                elif event.key == pg.K_3:
+                    self.selection = Selection.SEPARATION
+
+        a, c, s = self.config.weights()
+        print(f"A: {a:.1f} - C: {c:.1f} - S: {s:.1f}")
 
 
 (
-    # Step 1: Create a new simulation.
-    Simulation(FlockingConfig(image_rotation=True, movement_speed=1, radius=50))
-    # Step 2: Add 50 birds to the simulation.
-    .batch_spawn_agents(50, Bird, images=["images/triangle.png"])
-    # Step 3: Profit! 🎉
+    FlockingLive(
+        FlockingConfig(
+            image_rotation=True,
+            movement_speed=1,
+            radius=50,
+            seed=1,
+        )
+    )
+    .batch_spawn_agents(50, Bird, images=["images/bird.png"])
     .run()
 )
 
