@@ -81,7 +81,7 @@ x, y = config.window.as_tuple()
         )
     )
     .batch_spawn_agents(n, Cockroach, images=["images/white.png"])
-    .spawn_site("images/bubble-full.png", x//2, y//2)
+    .spawn_site("images/circle.png", x//2, y//2)
     .run()
 )
 
