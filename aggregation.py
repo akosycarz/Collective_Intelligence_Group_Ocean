@@ -12,9 +12,9 @@ from vi.config import Window, Config, dataclass, deserialize
 class AggregationConfig(Config):
     # Add all parameters here
     D: int = 20
-    joining_prob: float = 0.7
-    leaving_prob: float = 0.01
-    t: int = 10
+    joining_prob: float = 0.5
+    leaving_prob: float = 0.1
+    t: int = 75
 
     def weights(self) -> tuple[float]:
         return (self)
@@ -69,8 +69,10 @@ class Cockroach(Agent):
     
     def join(self, neighbours):
         # Calculate the joining probability using the number of neighbours
-        probability = self.config.joining_prob * neighbours
-        # The probability function is currently random, not based on anything
+        if neighbours != 0:
+            probability = self.config.joining_prob ** (1/neighbours)
+        else: probability = self.config.joining_prob
+        # The probability function is not yet perfect
         # Return True if join the aggregate, else return False
         if self.on_site() & util.probability(probability):
             return True
@@ -80,8 +82,10 @@ class Cockroach(Agent):
     def leave(self, neighbours):
         # Calculate the leaving probability
         # If there are many neighbours, leaving is less likely
-        probability = self.config.leaving_prob * 0.1*neighbours
-        # The probability function is currently random, not based on anything
+        if neighbours != 0:
+            probability = self.config.joining_prob ** neighbours
+        else: probability = self.config.joining_prob
+        # The probability function is not perfect
         # Return True if leave the aggregate, else return False
         if util.probability(probability):
             return True
@@ -95,7 +99,11 @@ class Cockroach(Agent):
         x = prng.uniform(0, xw)
         y = prng.uniform(0, yw)
         # If it is inside an aggregation site, repeat the choice
-        if ((xw//2-110) < x < (xw//2+110)) & ((yw//2-110) < y < (yw//2+110)):
+        # One circle: if ((xw//2-75) < x < (xw//2+75)) and ((yw//2-75) < y < (yw//2+75)):
+        # Two same size circles: 
+        # if (((xw//4-75) < x < (xw//4+75)) or (((xw//4)*3-75) < x < ((xw//4)*3+75))) and ((yw//2-75) < y < (yw//2+75)):
+        # Two different size circles:
+        if (((xw//4-100) < x < (xw//4+100)) or (((xw//4)*3-75) < x < ((xw//4)*3+75))) and ((yw//2-75) < y < (yw//2+75)):
             new_pos = self.choose_start_pos()
             return new_pos
         # Else, return the position
@@ -104,6 +112,8 @@ class Cockroach(Agent):
 
 config = Config()
 n = 50
+config.window.height = n*(4**2)
+config.window.width = n*(4**2)
 x, y = config.window.as_tuple()
 
 (
@@ -117,7 +127,13 @@ x, y = config.window.as_tuple()
         )
     )
     .batch_spawn_agents(n, Cockroach, images=["images/white.png"])
-    .spawn_site("images/circle.png", x//2, y//2)
+    # One circle: .spawn_site("images/circle.png", x//2, y//2)
+    # Two same size circles: 
+    #.spawn_site("images/circle.png", x//4, y//2)
+    #.spawn_site("images/circle.png", (x//4)*3, y//2)
+    # Two different sizde circles:
+    .spawn_site("images/bigger_circle.png", x//4, y//2)
+    .spawn_site("images/circle.png", (x//4)*3, y//2)
     .run()
 )
 
