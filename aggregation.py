@@ -2,6 +2,7 @@ from enum import Enum, auto
 from matplotlib import image
 import numpy as np
 import math
+import polars as pl
 
 import pygame as pg
 from pygame.math import Vector2
@@ -20,8 +21,8 @@ class AggregationConfig(Config):
     small_circle_radius: int = 128/2
     big_circle_radius: int = 200/2
 
-    def weights(self) -> tuple[float]:
-        return (self)
+    def weights(self) -> tuple[float, float]:
+        return (self.factor_a, self.factor_b)
     ...
 
 
@@ -117,13 +118,14 @@ class Cockroach(Agent):
         else:
             return Vector2((x, y))
 
+
 config = Config()
 n = 50
 config.window.height = n*(4**2)
 config.window.width = n*(4**2)
 x, y = config.window.as_tuple()
 
-(
+df = (
     Simulation(
         AggregationConfig(
             image_rotation=True,
@@ -131,6 +133,8 @@ x, y = config.window.as_tuple()
             radius=100,
             seed=1,
             window=Window(width=n*(4**2), height=n*(4**2)),
+            duration=20*60,
+            fps_limit=0,
         )
     )
     .batch_spawn_agents(n, Cockroach, images=["images/white.png"])
@@ -142,8 +146,25 @@ x, y = config.window.as_tuple()
     .spawn_site("images/bigger_circle.png", x//4, y//2)
     .spawn_site("images/circle.png", (x//4)*3, y//2)
     .run()
+    .snapshots
+    # Get the number of stopped agents per timeframe and also per aggregation
+    # site
+    .filter(pl.col("state") == 'still')
+    .with_columns([
+        ((((x//4)*3+64) > pl.col("x")) & (pl.col("x") > ((x//4)*3-64)) & ((y//2+64) > pl.col("y")) & (pl.col("y") > (y//2-64))).alias("small aggregate"),
+        (((x//4+100) > pl.col("x")) & (pl.col("x") > (x//4-100)) & ((y//2+100) > pl.col("y")) & (pl.col("y") > (y//2-100))).alias("big aggregate")
+    ])
+    .groupby(["frame"])
+    .agg([
+        pl.count('id').alias("number of stopped agents"),
+        pl.col("small aggregate").cumsum().alias("small aggregate size").last(),
+        pl.col("big aggregate").cumsum().alias("big aggregate size").last()
+    ])
+    .sort(["frame", "number of stopped agents"])
 )
 
-
+print(df)
+print('Proportion of agents in small aggregate: {}'.format(df.get_column("small aggregate size")[-1] / n))
+print('Proportion of agents in big aggregate: {}'.format(df.get_column("big aggregate size")[-1] / n))
 
 
