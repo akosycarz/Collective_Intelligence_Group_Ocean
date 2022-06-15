@@ -33,6 +33,7 @@ class Cockroach(Agent):
         # All agents start at the wandering state and with counter 0
         self.state = 'wandering'
         self.counter = 0
+        self.popularity = random.randint(1, 10)
         # Create the time constraints max_time =t_join = t_leave
         # Sample some Gaussian noise
         noise = np.random.normal()
@@ -46,7 +47,7 @@ class Cockroach(Agent):
         # Save the current state of the agent
         self.save_data("state", self.state)
         # The number of immediate neighbours
-        neighbours = self.in_proximity_performance().count()
+        neighbours = self.in_proximity_performance()
         if self.state == 'wandering': 
             # If detect an aggregation site, join the aggregation with given 
             # probability
@@ -78,7 +79,7 @@ class Cockroach(Agent):
     def join(self, neighbours):
         # Calculate the joining probability using the number of neighbours
         # The probability to stop is 0.03 if no neighbours and at most 0.51
-        probability = 0.03 + 0.48*(1 - math.exp(-self.config.factor_a * neighbours))
+        probability = 0.03 + 0.48*(1 - math.exp(-self.config.factor_a * neighbours.count())
         # Return True if join the aggregate, else return False
         if self.on_site() and util.probability(probability):
             return True
@@ -91,7 +92,7 @@ class Cockroach(Agent):
         # If there are many neighbours, leaving is less likely
         # If there are no neighbours, it is nearly certain that the agents
         # leave, probability is 1
-        probability = math.exp(-self.config.factor_b * neighbours)
+        probability = math.exp(-self.config.factor_b * neighbours.count())
         # Return True if leave the aggregate, else return False
         if util.probability(probability):
             return True
@@ -117,6 +118,13 @@ class Cockroach(Agent):
         # Else, return the position
         else:
             return Vector2((x, y))
+   
+    def neighbour_popularity(self, neighbours):
+        avg_popularity = 0
+        for i in neighbours:
+            avg_popularity += i.popularity
+        
+        return avg_popularity / neighbours.count()
 
 
 config = Config()
@@ -166,5 +174,15 @@ df = (
 print(df)
 print('Proportion of agents in small aggregate: {}'.format(df.get_column("small aggregate size")[-1] / n))
 print('Proportion of agents in big aggregate: {}'.format(df.get_column("big aggregate size")[-1] / n))
+                                   
+# Plot the number of stopped agents per frame
+plot1 = sns.relplot(x=df["frame"], y=df["number of stopped agents"], kind="line")
+plot1.savefig("stopped.png", dpi=300)
+# Plot the small aggregate size per frame
+plot2 = sns.relplot(x=df["frame"], y=df["small aggregate size"], kind="line")
+plot2.savefig("small_aggregate.png", dpi=300)
+# Plot the big aggregate size per frame
+plot3 = sns.relplot(x=df["frame"], y=df["big aggregate size"], kind="line")
+plot3.savefig("big_aggregate.png", dpi=300)
 
 
