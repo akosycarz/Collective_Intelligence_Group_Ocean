@@ -4,7 +4,6 @@ import numpy as np
 import math
 import polars as pl
 import seaborn as sns
-import random
 
 import pygame as pg
 from pygame.math import Vector2
@@ -16,14 +15,14 @@ from vi.config import Window, Config, dataclass, deserialize
 class AggregationConfig(Config):
     # Add all parameters here
     D: int = 20
-    factor_a: float = 2.6
-    factor_b: float = 2.2
+    factor_a: float = 2.3
+    factor_b: float = 2.5
     t_join: int = 50
-    t_leave: int = 50
+    t_leave: int = 100
     small_circle_radius: int = 128/2
     big_circle_radius: int = 200/2
     number_popular_agents: int = 0
-    max_popular_agents: int = 6
+    max_popular_agents: int = 10
 
     def weights(self) -> tuple[float, float]:
         return (self.factor_a, self.factor_b)
@@ -37,14 +36,14 @@ class Cockroach(Agent):
         # All agents start at the wandering state and with counter 0
         self.state = 'wandering'
         self.counter = 0
-        if self.config.number_popular_agents <= self.config.max_popular_agents:
+        if self.config.number_popular_agents < self.config.max_popular_agents:
             self.config.number_popular_agents += 1
             self.popularity = 3
             self.change_image(1)
         else:
-            self.popularity = random.randint(1, 2)
+            self.popularity = 1
             self.change_image(0)
-        # Create the time constraints
+        # Create the time constraints max_time =t_join = t_leave
         # Sample some Gaussian noise
         noise = np.random.normal()
         self.max_join_time = self.config.t_join + noise
@@ -91,7 +90,7 @@ class Cockroach(Agent):
         avg_pop = self.neighbour_popularity(neighbours)
         # Calculate the joining probability using the number of neighbours
         # The probability to stop is 0.03 if no neighbours and at most 0.51
-        probability = 0.03 + 0.48*(1 - math.e**(-self.config.factor_a * len(neighbours)))
+        probability = 0.03 + 0.48*(1 - math.e**(-self.config.factor_a * len(neighbours)))*(avg_pop/self.popularity)
         # Return True if join the aggregate, else return False
         if self.popularity == 3:
             if self.on_site_id() == 0:
@@ -110,7 +109,8 @@ class Cockroach(Agent):
         # If there are no neighbours, it is nearly certain that the agents
         # leave, probability is 1
         probability = math.e**(-self.config.factor_b * len(neighbours))
-        print(f'Leave popularity: {probability}')
+        if probability < 0.0025 and avg_pop == 1:
+            probability = 0.0025
         # Return True if leave the aggregate, else return False
         if util.probability(probability):
             return True
@@ -163,10 +163,10 @@ df = (
         AggregationConfig(
             image_rotation=True,
             movement_speed=1,
-            radius=100,
+            radius=125,
             seed=1,
             window=Window(width=n*(4**2), height=n*(4**2)),
-            duration=30*60,
+            duration=240*60,
             fps_limit=0,
         )
     )
@@ -190,22 +190,42 @@ df = (
     .groupby(["frame"])
     .agg([
         pl.count('id').alias("number of stopped agents"),
-        pl.col("small aggregate").cumsum().alias("small aggregate size").last(),
-        pl.col("big aggregate").cumsum().alias("big aggregate size").last()
+        pl.col("small aggregate").cumsum().alias("2nd aggregate size").last(),
+        pl.col("big aggregate").cumsum().alias("1st aggregate size").last()
     ])
     .sort(["frame", "number of stopped agents"])
 )
 
 print(df)
-print('Proportion of agents in small aggregate: {}'.format(df.get_column("small aggregate size")[-1] / n))
-print('Proportion of agents in big aggregate: {}'.format(df.get_column("big aggregate size")[-1] / n))
+print('Proportion of agents in right aggregate: {}'.format(df.get_column("2nd aggregate size")[-1] / n))
+print('Proportion of agents in left aggregate: {}'.format(df.get_column("1st aggregate size")[-1] / n))
+#print('Proportion of agents in small aggregate: {}'.format(df.get_column("2nd aggregate size")[-1] / n))
+#print('Proportion of agents in big aggregate: {}'.format(df.get_column("1st aggregate size")[-1] / n))
 
 # Plot the number of stopped agents per frame
 plot1 = sns.relplot(x=df["frame"], y=df["number of stopped agents"], kind="line")
 plot1.savefig("stopped.png", dpi=300)
-plot2 = sns.relplot(x=df["frame"], y=df["small aggregate size"], kind="line")
-plot2.savefig("small_aggregate.png", dpi=300)
-plot3 = sns.relplot(x=df["frame"], y=df["big aggregate size"], kind="line")
-plot3.savefig("big_aggregate.png", dpi=300)
+plot2 = sns.relplot(x=df["frame"], y=df["2nd aggregate size"], kind="line")
+plot2.savefig("2nd_aggregate.png", dpi=300)
+plot3 = sns.relplot(x=df["frame"], y=df["1st aggregate size"], kind="line")
+plot3.savefig("1st_aggregate.png", dpi=300)
+# COMBINE PLOTS
 
+threePlots_x = df["frame"]
+# three plots
+stopped_agents_y = df["number of stopped agents"]
+aggregSize_small_y = df["2nd aggregate size"]
+aggregSize_big_y = df["1st aggregate size"]
 
+# plot lines
+plt.plot(threePlots_x, stopped_agents_y, 
+    label = "number of stopped agents")
+plt.plot(threePlots_x, aggregSize_small_y, 
+    label = "2nd aggregate size")
+plt.plot(threePlots_x, aggregSize_big_y, 
+    label = "1st aggregate size")
+plt.legend()
+plt.xlabel('Frame')
+plt.ylabel('Number of agents')
+plt.savefig('Bertta12.png')
+#plt.show()
