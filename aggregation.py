@@ -1,7 +1,9 @@
 from enum import Enum, auto
-from matplotlib import image
+import matplotlib.pyplot as plt
 import numpy as np
 import math
+import polars as pl
+import seaborn as sns
 
 import pygame as pg
 from pygame.math import Vector2
@@ -13,15 +15,17 @@ from vi.config import Window, Config, dataclass, deserialize
 class AggregationConfig(Config):
     # Add all parameters here
     D: int = 20
-    factor_a: float = 2.6
-    factor_b: float = 2.2
-    t_join: int = 50
-    t_leave: int = 150
+    factor_a: float = 2.3
+    factor_b: float = 2.5
+    t_join: int = 100
+    t_leave: int = 200
     small_circle_radius: int = 128/2
-    big_circle_radius: int = 200/2
+    big_circle_radius: int = 300/2
+    number_popular_agents: int = 0
+    max_popular_agents: int = 10
 
-    def weights(self) -> tuple[float]:
-        return (self)
+    def weights(self) -> tuple[float, float]:
+        return (self.factor_a, self.factor_b)
     ...
 
 
@@ -32,6 +36,13 @@ class Cockroach(Agent):
         # All agents start at the wandering state and with counter 0
         self.state = 'wandering'
         self.counter = 0
+        if self.config.number_popular_agents < self.config.max_popular_agents:
+            self.config.number_popular_agents += 1
+            self.popularity = 3
+            self.change_image(1)
+        else:
+            self.popularity = 1
+            self.change_image(0)
         # Create the time constraints max_time =t_join = t_leave
         # Sample some Gaussian noise
         noise = np.random.normal()
@@ -45,7 +56,7 @@ class Cockroach(Agent):
         # Save the current state of the agent
         self.save_data("state", self.state)
         # The number of immediate neighbours
-        neighbours = self.in_proximity_performance().count()
+        neighbours = list(self.in_proximity_performance())
         if self.state == 'wandering': 
             # If detect an aggregation site, join the aggregation with given 
             # probability
@@ -75,22 +86,31 @@ class Cockroach(Agent):
 
             
     def join(self, neighbours):
+        # The average popularity of the neighbours
+        avg_pop = self.neighbour_popularity(neighbours)
         # Calculate the joining probability using the number of neighbours
         # The probability to stop is 0.03 if no neighbours and at most 0.51
-        probability = 0.03 + 0.48*(1 - math.exp(-self.config.factor_a * neighbours))
+        probability = 0.03 + 0.48*(1 - math.e**(-self.config.factor_a * len(neighbours)))*(avg_pop/self.popularity)
         # Return True if join the aggregate, else return False
-        if self.on_site() and util.probability(probability):
-            return True
+        if self.popularity == 3:
+            if self.on_site_id() == 0:
+                return True
         else:
-            return False
+            if self.on_site_id() is not None and util.probability(probability):
+                return True
+        return False
 
 
     def leave(self, neighbours):
+        # The average popularity of the neighbours
+        avg_pop = self.neighbour_popularity(neighbours)
         # Calculate the leaving probability
         # If there are many neighbours, leaving is less likely
         # If there are no neighbours, it is nearly certain that the agents
         # leave, probability is 1
-        probability = math.exp(-self.config.factor_b * neighbours)
+        probability = math.e**(-self.config.factor_b * len(neighbours))
+        if probability < 0.0025 and avg_pop == 1:
+            probability = 0.0025
         # Return True if leave the aggregate, else return False
         if util.probability(probability):
             return True
@@ -108,42 +128,105 @@ class Cockroach(Agent):
         # If it is inside an aggregation site, repeat the choice
         # One circle: if ((xw//2-r1) < x < (xw//2+r1)) and ((yw//2-r1) < y < (yw//2+r1)):
         # Two same size circles: 
-        # if (((xw//4-r1) < x < (xw//4+r1)) or (((xw//4)*3-r1) < x < ((xw//4)*3+r1))) and ((yw//2-r1) < y < (yw//2+r1)):
+        if (((xw//4-r2) < x < (xw//4+r2)) or (((xw//4)*3-r2) < x < ((xw//4)*3+r2))) and ((yw//2-r2) < y < (yw//2+r2)):
         # Two different size circles:
-        if (((xw//4-r2) < x < (xw//4+r2)) and ((yw//2+r2) < y < (yw//2+r2))) or ((((xw//4)*3-r1) < x < ((xw//4)*3+r1)) and ((yw//2-r1) < y < (yw//2+r1))):
+        #if (((xw//4-r2) < x < (xw//4+r2)) and ((yw//2+r2) < y < (yw//2+r2))) or ((((xw//4)*3-r1) < x < ((xw//4)*3+r1)) and ((yw//2-r1) < y < (yw//2+r1))):
             new_pos = self.choose_start_pos()
             return new_pos
         # Else, return the position
         else:
             return Vector2((x, y))
+    
+    def neighbour_popularity(self, neighbours):
+        avg_popularity = 0
+        if len(neighbours) != 0:
+            for i in neighbours:
+                avg_popularity += i.popularity
+            if avg_popularity / len(neighbours) > 3:
+                return 3
+            elif avg_popularity / len(neighbours) < 1:
+                return 1
+            else:
+                return avg_popularity / len(neighbours)
+        else:
+            return 1
+
 
 config = Config()
-n = 50
-config.window.height = n*(4**2)
-config.window.width = n*(4**2)
+n = 150
+config.window.height = n*10
+config.window.width = n*10
 x, y = config.window.as_tuple()
 
-(
+df = (
     Simulation(
         AggregationConfig(
             image_rotation=True,
             movement_speed=1,
-            radius=100,
+            radius=125,
             seed=1,
-            window=Window(width=n*(4**2), height=n*(4**2)),
+            window=Window(width=n*10, height=n*10),
+            duration=240*60,
+            fps_limit=0,
         )
     )
-    .batch_spawn_agents(n, Cockroach, images=["images/white.png"])
+    .batch_spawn_agents(n, Cockroach, images=["images/white.png", "images/red.png"])
     # One circle: .spawn_site("images/circle.png", x//2, y//2)
     # Two same size circles: 
     #.spawn_site("images/circle.png", x//4, y//2)
     #.spawn_site("images/circle.png", (x//4)*3, y//2)
     # Two different sizde circles:
-    .spawn_site("images/bigger_circle.png", x//4, y//2)
-    .spawn_site("images/circle.png", (x//4)*3, y//2)
+    .spawn_site("images/bigger_big_circle.png", x//4, y//2)
+    .spawn_site("images/bigger_big_circle.png", (x//4)*3, y//2)
+    #.spawn_site("images/circle.png", (x//4)*3, y//2)
     .run()
+    .snapshots
+    # Get the number of stopped agents per timeframe and also per aggregation
+    # site
+    .filter(pl.col("state") == 'still')
+    .with_columns([
+        ((((x//4)*3+64) > pl.col("x")) & (pl.col("x") > ((x//4)*3-64)) & ((y//2+64) > pl.col("y")) & (pl.col("y") > (y//2-64))).alias("small aggregate"),
+        (((x//4+100) > pl.col("x")) & (pl.col("x") > (x//4-100)) & ((y//2+100) > pl.col("y")) & (pl.col("y") > (y//2-100))).alias("big aggregate")
+    ])
+    .groupby(["frame"])
+    .agg([
+        pl.count('id').alias("number of stopped agents"),
+        pl.col("small aggregate").cumsum().alias("2nd aggregate size").last(),
+        pl.col("big aggregate").cumsum().alias("1st aggregate size").last()
+    ])
+    .sort(["frame", "number of stopped agents"])
 )
 
+print(df)
+print('Proportion of agents in right aggregate: {}'.format(df.get_column("2nd aggregate size")[-1] / n))
+print('Proportion of agents in left aggregate: {}'.format(df.get_column("1st aggregate size")[-1] / n))
+#print('Proportion of agents in small aggregate: {}'.format(df.get_column("2nd aggregate size")[-1] / n))
+#print('Proportion of agents in big aggregate: {}'.format(df.get_column("1st aggregate size")[-1] / n))
 
+# Plot the number of stopped agents per frame
+plot1 = sns.relplot(x=df["frame"], y=df["number of stopped agents"], kind="line")
+plot1.savefig("stopped.png", dpi=300)
+plot2 = sns.relplot(x=df["frame"], y=df["2nd aggregate size"], kind="line")
+plot2.savefig("2nd_aggregate.png", dpi=300)
+plot3 = sns.relplot(x=df["frame"], y=df["1st aggregate size"], kind="line")
+plot3.savefig("1st_aggregate.png", dpi=300)
+
+threePlots_x = df["frame"]
+# three plots
+stopped_agents_y = df["number of stopped agents"]
+aggregSize_small_y = df["2nd aggregate size"]
+aggregSize_big_y = df["1st aggregate size"]
+
+# plot lines
+plt.plot(threePlots_x, stopped_agents_y, 
+    label = "number of stopped agents")
+plt.plot(threePlots_x, aggregSize_small_y, 
+    label = "2nd aggregate size")
+plt.plot(threePlots_x, aggregSize_big_y, 
+    label = "1st aggregate size")
+plt.legend()
+plt.xlabel('Frame')
+plt.ylabel('Number of agents')
+plt.savefig('Matti2.png')
 
 
