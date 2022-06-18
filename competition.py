@@ -10,8 +10,8 @@ from vi.config import Window, Config, dataclass, deserialize
 @dataclass
 class CompetitionConfig(Config):
     # Add all parameters here
-    rabbit_reproducton_prob: float = 0.1
-    fox_reproduction_prob: float = 0.01
+    rabbit_reproducton_prob: float = 0.01
+    fox_reproduction_prob: float = 0.1
 
     def weights(self) -> tuple[float]:
         return (self)
@@ -24,6 +24,7 @@ class Fox(Agent):
     def on_spawn(self):
         # All agents start with the same energy level
         self.energy = 1
+        self.change_image(1)
 
     def update(self):
         # Decrease the energy of the fox
@@ -58,6 +59,11 @@ class Fox(Agent):
 class Rabbit(Agent):
     config: CompetitionConfig
 
+    def on_spawn(self):
+        # All agents start with the same energy level
+        self.energy = 1
+        self.change_image(0)
+    
     def update(self):
         # Reproduce with given probability
         if util.probability(self.config.rabbit_reproducton_prob):
@@ -94,8 +100,8 @@ df = (
             #fps_limit=0,
         )
     )
-    .batch_spawn_agents(n_fox, Fox, images=["images/red.png"])
-    .batch_spawn_agents(n_rabbit, Rabbit, images=["images/white.png"])
+    .batch_spawn_agents(n_fox, Fox, images=["images/white.png", "images/red.png"])
+    .batch_spawn_agents(n_rabbit, Rabbit, images=["images/white.png", "images/red.png"])
     .run()
     .snapshots
     # Get the number of stopped rabbits and foxes per timeframe 
@@ -109,7 +115,7 @@ print(df)
 #print('Proportion of agents in left aggregate: {}'.format(df.get_column("1st aggregate size")[-1] / n))
 
 # Plot the number of stopped agents per frame
-plot1 = sns.relplot(x=df["frame"], y=df["number of stopped agents"], hue= df["image_index"], kind="line")
+plot1 = sns.relplot(x=df["frame"], y=df["number of agents"], hue= df["image_index"], kind="line")
 plot1.savefig("number_agents.png", dpi=300)
 
 # Does the fox get energy from killling a rabbit if they also reproduce?
