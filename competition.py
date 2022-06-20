@@ -14,6 +14,7 @@ class CompetitionConfig(Config):
     fox_reproduction_prob: float = 0.1
     energy_decrease_rate: float = 0.99
     grass_grow_rate: int = 90
+    aging_rate: float = 0.01
 
     def weights(self) -> tuple[float]:
         return (self)
@@ -26,9 +27,15 @@ class Fox(Agent):
     def on_spawn(self):
         # All agents start with the same energy level
         self.energy = 1
+        # All animals have age, and they can only live for a specific time
+        self.age = 0
         self.change_image(1)
 
     def update(self):
+        # Save the type of the animal
+        self.save_data("kind", "fox")
+        # Increase the age of the animal
+        self.age += self.config.aging_rate
         # Decrease the energy of the fox
         self.energy *= self.config.energy_decrease_rate
         # If the fox has no energy, it dies
@@ -44,10 +51,30 @@ class Fox(Agent):
         if rabbit is not None:
             rabbit.kill()
             self.energy = 1
-            if util.probability(self.config.fox_reproduction_prob):
-                self.reproduce()
+            self.sexual_reproduction()
+            # Asexual reproduction:
+            #if util.probability(self.config.fox_reproduction_prob):
+            #    self.reproduce()
                 # Reproduction takes energy, so the energy level of the animal decreasdes
-                self.energy /= 2
+            #    self.energy /= 2
+    
+    def sexual_reproduction(self):
+        # If there is another fox near, and both this fox and the possible 
+        # partner are old enough, reproduce with given probability
+        if self.age < 0.5:
+            return 
+        
+        partner = (self.in_proximity_accuracy()
+                       .without_distance()
+                       .filter_kind(Fox)
+                       .filter(lambda agent: agent.age > 0.5)
+                       .first()
+                  )
+        if partner is not None and util.probability(self.config.fox_reproduction_prob):
+            # Currently only gets one offspring, should it be more?
+            self.reproduce()
+            # Reproduction takes energy, so decrease energy
+            self.energy /= 2
 
 
 class Rabbit(Agent):
@@ -56,9 +83,15 @@ class Rabbit(Agent):
     def on_spawn(self):
         # All agents start with the same energy level
         self.energy = 1
+        # All animals have age, and they can only live for a specific time
+        self.age = 0
         self.change_image(0)
 
     def update(self):
+        # Save the type of the animal
+        self.save_data("kind", "rabbit")
+        # Increase the age of the animal
+        self.age += self.config.aging_rate
         # Decrease the energy of the rabbit
         self.energy *= self.config.energy_decrease_rate
         # If the rabbit has no energy, it dies
@@ -74,10 +107,31 @@ class Rabbit(Agent):
         if grass is not None:
             grass.kill()
             self.energy = 1
+        # Sexual reproduction:
+        self.sexual_reproduction()
+        # Asexual reproduction:
         # Reproduce with given probability
-        if util.probability(self.config.rabbit_reproducton_prob):
-            self.reproduce()
+        #if util.probability(self.config.rabbit_reproducton_prob):
+         #   self.reproduce()
             # Reproduction takes energy, so the energy level of the animal decreasdes
+          #  self.energy /= 2
+        
+    def sexual_reproduction(self):
+        # If there is another rabbit near, and both this rabbit and the 
+        # possible partner are old enough, reproduce with given probability
+        if self.age < 0.3:
+            return
+        
+        partner = (self.in_proximity_accuracy()
+                       .without_distance()
+                       .filter_kind(Rabbit)
+                       .filter(lambda agent: agent.age > 0.3)
+                       .first()
+                  )
+        if partner is not None and util.probability(self.config.fox_reproduction_prob):
+            # Currently only gets one offspring, should it be more?
+            self.reproduce()
+            # Reproduction takes energy, so decrease energy
             self.energy /= 2
 
             
@@ -96,6 +150,8 @@ class Grass(Agent):
         # Is it in multiple places?
     
     def update(self):
+        # Save the type of the organism
+        self.save_data("kind", "grass")
         self.counter += 1
 
         # The grass grows every grass_grow_rate timesteps
