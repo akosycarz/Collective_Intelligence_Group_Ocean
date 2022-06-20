@@ -12,9 +12,11 @@ class CompetitionConfig(Config):
     # Add all parameters here
     rabbit_reproducton_prob: float = 0.01
     fox_reproduction_prob: float = 0.1
+    energy_decrease_rate: float = 0.99
+    grass_grow_rate: int = 60
 
     def weights(self) -> tuple[float]:
-        return (self)
+        return (self.grass_grow_rate)
     ...
 
 
@@ -28,7 +30,7 @@ class Fox(Agent):
 
     def update(self):
         # Decrease the energy of the fox
-        self.energy *= 0.9999
+        self.energy *= self.config.energy_decrease_rate
         # If the fox has no energy, it dies
         if self.energy == 0:
             self.kill()
@@ -65,6 +67,11 @@ class Rabbit(Agent):
         self.change_image(0)
     
     def update(self):
+        # Decrease the energy of the rabbit
+        self.energy *= self.config.energy_decrease_rate
+        # If the rabbit has no energy, it dies
+        if self.energy == 0:
+            self.kill()
         # Reproduce with given probability
         if util.probability(self.config.rabbit_reproducton_prob):
             self.reproduce()
@@ -78,6 +85,27 @@ class Rabbit(Agent):
         x = prng.uniform(0, xw)
         y = prng.uniform(0, yw)
         return Vector2((x, y))
+
+class Grass(Agent):
+    config: CompetitionConfig
+
+    def on_spawn(self):
+        # The grass grows only in specific places & it does not move
+        #self.pos = 0
+        # Initialize a counter to keep track of time
+        self.counter = 0
+        # The grass does not move
+        self.freeze_movement()
+        # Where is the grass?
+        # How much grass?
+        # Is it in multiple places?
+    
+    def update(self):
+        self.counter += 1
+
+        # The grass grows every grass_grow_rate timesteps
+        if self.counter % self.config.grass_grow_rate == 0:
+            self.reproduce()
 
 
 config = Config()
@@ -117,6 +145,7 @@ print(df)
 # Plot the number of stopped agents per frame
 plot1 = sns.relplot(x=df["frame"], y=df["number of agents"], hue= df["image_index"], kind="line")
 plot1.savefig("number_agents.png", dpi=300)
+# Change the plots so that image index 0 is rabbits and image index 1 is foxes
 
 # Does the fox get energy from killling a rabbit if they also reproduce?
 # How about sexual reproduction and some characteristics that make rabbits
