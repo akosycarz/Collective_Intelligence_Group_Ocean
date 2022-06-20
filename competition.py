@@ -12,6 +12,7 @@ class CompetitionConfig(Config):
     # Add all parameters here
     rabbit_reproducton_prob: float = 0.01
     fox_reproduction_prob: float = 0.1
+    grass_grow_rate: int = 60
 
     def weights(self) -> tuple[float]:
         return (self)
@@ -44,20 +45,54 @@ class Fox(Agent):
             self.energy = 1
             if util.probability(self.config.fox_reproduction_prob):
                 self.reproduce()
+                # Reproduction takes energy, so the energy level of the animal decreasdes
+                self.energy /= 2
 
 
 class Rabbit(Agent):
     config: CompetitionConfig
         
     def on_spawn(self):
+        # All agents start with the same energy level
+        self.energy = 1
         self.change_image(0)
 
     def update(self):
+        # Decrease the energy of the rabbit
+        self.energy *= 0.9999
+        # If the rabbit has no energy, it dies
+        if self.energy == 0:
+            self.kill()
         # Reproduce with given probability
         if util.probability(self.config.rabbit_reproducton_prob):
             self.reproduce()
+            # Reproduction takes energy, so the energy level of the animal decreasdes
+            self.energy /= 2
 
+            
+            
+class Grass(Agent):
+    config: CompetitionConfig
 
+    def on_spawn(self):
+        # The grass grows only in specific places & it does not move
+        self.pos = 0
+        # Initialize a counter to keep track of time
+        self.counter = 0
+        # The grass does not move
+        self.freeze_movement()
+        # Where is the grass?
+        # How much grass?
+        # Is it in multiple places?
+    
+    def update(self):
+        self.counter += 1
+
+        # The grass grows every grass_grow_rate timesteps
+        if self.counter % self.config.grass_grow_rate == 0:
+            self.reproduce()
+            
+            
 config = Config()
 n_fox = 10
 n_rabbit = 10
