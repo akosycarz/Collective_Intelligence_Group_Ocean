@@ -90,5 +90,5 @@ df = (
 
 print(df)
 # Plot the number of stopped agents per frame
-plot1 = sns.relplot(x=df["frame"], y=df["number of stopped agents"], hue= df["image_index"], kind="line")
-plot1.savefig("number_agents.png", dpi=300)
+#plot1 = sns.relplot(x=df["frame"], y=df["number of stopped agents"], hue= df["image_index"], kind="line")
+#ßplot1.savefig("number_agents.png", dpi=300)
