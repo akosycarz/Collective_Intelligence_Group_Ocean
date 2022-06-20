@@ -12,7 +12,8 @@ class CompetitionConfig(Config):
     # Add all parameters here
     rabbit_reproducton_prob: float = 0.01
     fox_reproduction_prob: float = 0.1
-    grass_grow_rate: int = 60
+    energy_decrease_rate: float = 0.99
+    grass_grow_rate: int = 90
 
     def weights(self) -> tuple[float]:
         return (self)
@@ -29,7 +30,7 @@ class Fox(Agent):
 
     def update(self):
         # Decrease the energy of the fox
-        self.energy *= 0.9999
+        self.energy *= self.config.energy_decrease_rate
         # If the fox has no energy, it dies
         if self.energy == 0:
             self.kill()
@@ -59,10 +60,20 @@ class Rabbit(Agent):
 
     def update(self):
         # Decrease the energy of the rabbit
-        self.energy *= 0.9999
+        self.energy *= self.config.energy_decrease_rate
         # If the rabbit has no energy, it dies
         if self.energy == 0:
-            self.kill()
+            self.kill() 
+        # Check if there is grass near
+        grass = (self.in_proximity_accuracy()
+                     .without_distance()
+                     .filter_kind(Grass)
+                     .first()
+                )
+        # If there is a grass, eat it and energy increases
+        if grass is not None:
+            grass.kill()
+            self.energy = 1
         # Reproduce with given probability
         if util.probability(self.config.rabbit_reproducton_prob):
             self.reproduce()
@@ -75,14 +86,13 @@ class Grass(Agent):
     config: CompetitionConfig
 
     def on_spawn(self):
+        self.change_image(2)
         # The grass grows only in specific places & it does not move
-        self.pos = 0
         # Initialize a counter to keep track of time
         self.counter = 0
         # The grass does not move
         self.freeze_movement()
         # Where is the grass?
-        # How much grass?
         # Is it in multiple places?
     
     def update(self):
@@ -94,8 +104,9 @@ class Grass(Agent):
             
             
 config = Config()
-n_fox = 10
-n_rabbit = 10
+n_fox = 20
+n_rabbit = 20
+n_grass = 30
 n = n_fox + n_rabbit
 config.window.height = n*10
 config.window.width = n*10
@@ -108,13 +119,14 @@ df = (
             movement_speed=1,
             radius=125,
             seed=1,
-            #window=Window(width=n*10, height=n*10),
+            window=Window(width=n*10, height=n*10),
             duration=5*60,
             #fps_limit=0,
         )
     )
-    .batch_spawn_agents(n_fox, Fox, images=["images/white.png", "images/red.png"])
-    .batch_spawn_agents(n_rabbit, Rabbit, images=["images/white.png", "images/red.png"])
+    .batch_spawn_agents(n_fox, Fox, images=["images/white.png", "images/red.png", "images/green.png"])
+    .batch_spawn_agents(n_rabbit, Rabbit, images=["images/white.png", "images/red.png", "images/green.png"])
+    .batch_spawn_agents(n_grass, Grass, images=["images/white.png", "images/red.png", "images/green.png"])
     .run()
     .snapshots
     # Get the number of stopped rabbits and foxes per timeframe 
