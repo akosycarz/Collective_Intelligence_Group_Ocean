@@ -18,7 +18,7 @@ class CompetitionConfig(Config):
     energy_decrease_rate_rabbit: float = 0.01
     energy_decrease_rate_fox: float = 0.03
     grass_grow_rate: int = 150
-    aging_rate: float = 0.001
+    aging_rate: float = 0.02
     rabbit_offspring_number: int = 3
     fox_offspring_number: int = 3
 
@@ -74,13 +74,13 @@ class Fox(Agent):
     def sexual_reproduction(self):
         # If there is another fox near, and both this fox and the possible 
         # partner are old enough, reproduce with given probability
-        if self.age < 0.5:
+        if self.age < 10:
             return 
         
         partner = (self.in_proximity_accuracy()
                        .without_distance()
                        .filter_kind(Fox)
-                       .filter(lambda agent: agent.age > 0.5)
+                       .filter(lambda agent: agent.age > 10)
                        .first()
                   )
         if partner is not None and util.probability(self.config.fox_reproduction_prob):
@@ -96,7 +96,7 @@ class Rabbit(Agent):
         
     def on_spawn(self):
         # All agents start with the same energy level
-        self.energy = 1
+        self.energy = 0.49
         # All animals have age, and they can only live for a specific time
         self.age = 0
         self.death_cause = "alive"
@@ -140,13 +140,13 @@ class Rabbit(Agent):
     def sexual_reproduction(self):
         # If there is another rabbit near, and both this rabbit and the 
         # possible partner are old enough, reproduce with given probability
-        if self.age < 0.3:
+        if self.age < 6:
             return
 
         partner = (self.in_proximity_accuracy()
                        .without_distance()
                        .filter_kind(Rabbit)
-                       .filter(lambda agent: agent.age > 0.3)
+                       .filter(lambda agent: agent.age > 6)
                        .first()
 
                   )
