@@ -5,6 +5,7 @@ import pygame as pg
 from pygame.math import Vector2
 from vi import Agent, Simulation, util
 from vi.config import Window, Config, dataclass, deserialize
+from numpy.random import choice
 
 import random
 
@@ -35,11 +36,13 @@ class Fox(Agent):
         # All animals have age, and they can only live for a specific time
         self.age = 0
         self.death_cause = "alive"
-        self.gender = random.choices(["male", "female", "other"],
-                      weights= (40, 40, 20))
+        genders_list = ["male", "female", "other"]
+        self.gender = random.choices(genders_list, k=1, weights=[0.4, 0.4, 0.2])[0]
         self.change_image(1)
 
     def update(self):
+        gender = str(self.gender)
+        self.save_data("gender", str(self.gender))
         # Save the type of the animal
         self.save_data("kind", "fox")
         self.save_data("death_cause", self.death_cause)
@@ -98,11 +101,12 @@ class Rabbit(Agent):
         # All animals have age, and they can only live for a specific time
         self.age = 0
         self.death_cause = "alive"
-        self.gender = random.choices(["male", "female", "other"],
-                      weights= (50, 50, 0))
+        genders_list = ["male", "female", "other"]
+        self.gender = random.choices(genders_list, k=1, weights=[0.5, 0.5, 0.2])[0]
         self.change_image(0)
 
     def update(self):
+        self.save_data("gender", str(self.gender))
         # Save the type of the animal
         self.save_data("kind", "rabbit")
         self.save_data("death_cause", self.death_cause)
@@ -145,10 +149,11 @@ class Rabbit(Agent):
                        .filter_kind(Rabbit)
                        .filter(lambda agent: agent.age > 0.3)
                        .first()
+
                   )
         if partner is not None and util.probability(self.config.rabbit_reproduction_prob) and self.energy >= 0.5:
             # A female can only be cloned and it must meet a male to do it
-            if self.gender == ["female"] and partner.gender == ['male']:
+            if self.gender == ["female"] and partner.gender == 'male':
                 # Currently only gets 3 offspring, should it be more?
                 for n in range(0, self.config.offspring_number):
                     self.reproduce()
@@ -172,6 +177,7 @@ class Grass(Agent):
         # Is it in multiple places?
     
     def update(self):
+        self.save_data("gender", "---")
         # Save the type of the organism
         self.save_data("kind", "grass")
         self.save_data("death_cause", self.death_cause)
@@ -209,10 +215,10 @@ df = (
     .run()
     .snapshots
     # Get the number of animals per death cause per timeframe 
-    .groupby(["frame", "kind", "death_cause"])
-    # Get the number of rabbits and foxes per timeframe 
+    .groupby(["frame", "kind", "death_cause", "gender"])
+    # Get the number of rabbits and foxes per timeframe
     .agg(pl.count('id').alias("number of agents"))
-    .sort(["frame", "kind", "death_cause"])
+    .sort(["frame", "kind", "death_cause", "gender"])
 )
 
 print(df)
