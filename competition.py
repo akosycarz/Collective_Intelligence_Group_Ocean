@@ -16,10 +16,10 @@ class CompetitionConfig(Config):
     rabbit_reproduction_prob: float = 0.9
     fox_reproduction_prob: float = 0.1
     energy_decrease_rate_rabbit: float = 0.01
-    energy_decrease_rate_fox: float = 0.1
-    grass_grow_rate: int = 200
+    energy_decrease_rate_fox: float = 0.03
+    grass_grow_rate: int = 150
     aging_rate: float = 0.001
-    offspring_number: int = 12
+    offspring_number: int = 3
 
     def weights(self) -> tuple[float]:
         return (self)
@@ -83,7 +83,7 @@ class Fox(Agent):
                        .first()
                   )
         if partner is not None and util.probability(self.config.fox_reproduction_prob):
-            if self.gender == ["female"] and partner.gender == ["male"]:
+            if self.gender == "female" and partner.gender == "male":
                 # Currently only gets one offspring, should it be more?
                 self.reproduce()
             # Reproduction takes energy, so decrease energy
@@ -152,7 +152,7 @@ class Rabbit(Agent):
         if partner is not None and util.probability(self.config.rabbit_reproduction_prob) and self.energy >= 0.5:
             # A female can only be cloned and it must meet a male to do it
 
-            if self.gender == ["female"] and partner.gender == 'male':
+            if self.gender == "female" and partner.gender == 'male':
                 # Currently only gets 3 offspring, should it be more?
                 for n in range(0, self.config.offspring_number):
                     self.reproduce()
@@ -188,9 +188,9 @@ class Grass(Agent):
             
             
 config = Config()
-n_fox = 10
-n_rabbit = 40
-n_grass = 50
+n_fox = 30
+n_rabbit = 60
+n_grass = 1000
 n = n_fox + n_rabbit
 config.window.height = n*10
 config.window.width = n*10
