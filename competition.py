@@ -146,7 +146,7 @@ class Rabbit(Agent):
         partner = (self.in_proximity_accuracy()
                        .without_distance()
                        .filter_kind(Rabbit)
-                       .filter(lambda agent: agent.age > 0.3)
+                       .filter(lambda agent: agent.age > 0.35)
                        .first()
 
                   )
@@ -191,7 +191,7 @@ class Grass(Agent):
 config = Config()
 n_fox = 30
 n_rabbit = 60
-n_grass = 1000
+n_grass = 600
 n = n_fox + n_rabbit
 config.window.height = n*10
 config.window.width = n*10
