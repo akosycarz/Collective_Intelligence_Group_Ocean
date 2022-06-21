@@ -6,19 +6,23 @@ from pygame.math import Vector2
 from vi import Agent, Simulation, util
 from vi.config import Window, Config, dataclass, deserialize
 
+import random
+
 @deserialize
 @dataclass
 class CompetitionConfig(Config):
     # Add all parameters here
     rabbit_reproducton_prob: float = 0.01
     fox_reproduction_prob: float = 0.1
-    energy_decrease_rate: float = 0.99
-    grass_grow_rate: int = 90
+    energy_decrease_rate_rabbit: float = 0.99
+    energy_decrease_rate_fox: float = 0.5
+    grass_grow_rate: int = 360
     aging_rate: float = 0.01
 
     def weights(self) -> tuple[float]:
         return (self)
     ...
+
 
 
 class Fox(Agent):
@@ -30,6 +34,8 @@ class Fox(Agent):
         # All animals have age, and they can only live for a specific time
         self.age = 0
         self.change_image(1)
+        self.gender = random.choices(["male", "female", "other"],
+                      weights= (40, 40, 20))
 
     def update(self):
         # Save the type of the animal
@@ -37,7 +43,7 @@ class Fox(Agent):
         # Increase the age of the animal
         self.age += self.config.aging_rate
         # Decrease the energy of the fox
-        self.energy *= self.config.energy_decrease_rate
+        self.energy *= self.config.energy_decrease_rate_fox
         # If the fox has no energy, it dies
         if self.energy == 0:
             self.kill()
@@ -77,15 +83,21 @@ class Fox(Agent):
             self.energy /= 2
 
 
+
+
 class Rabbit(Agent):
     config: CompetitionConfig
         
     def on_spawn(self):
         # All agents start with the same energy level
-        self.energy = 1
+        self.energy = 0.49
         # All animals have age, and they can only live for a specific time
         self.age = 0
         self.change_image(0)
+        self.gender = random.choices(["male", "female", "other"],
+                      weights= (50, 50, 0))
+
+
 
     def update(self):
         # Save the type of the animal
@@ -93,7 +105,7 @@ class Rabbit(Agent):
         # Increase the age of the animal
         self.age += self.config.aging_rate
         # Decrease the energy of the rabbit
-        self.energy *= self.config.energy_decrease_rate
+        self.energy *= self.config.energy_decrease_rate_rabbit
         # If the rabbit has no energy, it dies
         if self.energy == 0:
             self.kill() 
@@ -128,11 +140,15 @@ class Rabbit(Agent):
                        .filter(lambda agent: agent.age > 0.3)
                        .first()
                   )
-        if partner is not None and util.probability(self.config.fox_reproduction_prob):
-            # Currently only gets one offspring, should it be more?
-            self.reproduce()
-            # Reproduction takes energy, so decrease energy
-            self.energy /= 2
+        if partner is not None and util.probability(self.config.fox_reproduction_prob) and self.energy >= 0.5:
+            if self.gender == "female" and partner.gender == 'male':
+                # Currently only gets 3 offspring, should it be more?
+                babies_count = 3
+                for n in range(0, babies_count):
+                    self.reproduce()
+
+                # Reproduction takes energy, so decrease energy
+                self.energy /= 2
 
             
             
@@ -160,9 +176,9 @@ class Grass(Agent):
             
             
 config = Config()
-n_fox = 20
+n_fox = 40
 n_rabbit = 40
-n_grass = 30
+n_grass = 200
 n = n_fox + n_rabbit
 config.window.height = n*10
 config.window.width = n*10
