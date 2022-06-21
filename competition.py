@@ -161,7 +161,7 @@ class Grass(Agent):
             
 config = Config()
 n_fox = 20
-n_rabbit = 20
+n_rabbit = 40
 n_grass = 30
 n = n_fox + n_rabbit
 config.window.height = n*10
@@ -173,16 +173,16 @@ df = (
         CompetitionConfig(
             image_rotation=True,
             movement_speed=1,
-            radius=125,
+            radius=15,
             seed=1,
             window=Window(width=n*10, height=n*10),
-            duration=5*60,
+            duration=60*60,
             #fps_limit=0,
         )
     )
     .batch_spawn_agents(n_fox, Fox, images=["images/white.png", "images/red.png", "images/green.png"])
     .batch_spawn_agents(n_rabbit, Rabbit, images=["images/white.png", "images/red.png", "images/green.png"])
-    .batch_spawn_agents(n_grass, Grass, images=["images/white.png", "images/red.png", "images/green.png"])
+    .batch_spawn_agents(n_grass, Grass, images=["images/white.png", "images/red.png", "images/grass.png"])
     .run()
     .snapshots
     # Get the number of stopped rabbits and foxes per timeframe 
