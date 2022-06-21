@@ -175,7 +175,7 @@ class Grass(Agent):
         self.freeze_movement()
         # Where is the grass?
         # Is it in multiple places?
-    
+
     def update(self):
         self.save_data("gender", "---")
         # Save the type of the organism
@@ -186,8 +186,8 @@ class Grass(Agent):
         # The grass grows every grass_grow_rate timesteps
         if self.counter % self.config.grass_grow_rate == 0:
             self.reproduce()
-            
-            
+
+
 config = Config()
 n_fox = 30
 n_rabbit = 60
