@@ -15,12 +15,11 @@ class CompetitionConfig(Config):
     # Add all parameters here
     rabbit_reproduction_prob: float = 0.9
     fox_reproduction_prob: float = 0.1
-    energy_decrease_rate: float = 0.99
     energy_decrease_rate_rabbit: float = 0.01
-    energy_decrease_rate_fox: float = 0.01
+    energy_decrease_rate_fox: float = 0.1
     grass_grow_rate: int = 200
     aging_rate: float = 0.001
-    offspring_number: int = 3
+    offspring_number: int = 12
 
     def weights(self) -> tuple[float]:
         return (self)
@@ -41,8 +40,7 @@ class Fox(Agent):
         self.change_image(1)
 
     def update(self):
-        gender = str(self.gender)
-        self.save_data("gender", str(self.gender))
+        self.save_data("gender", self.gender)
         # Save the type of the animal
         self.save_data("kind", "fox")
         self.save_data("death_cause", self.death_cause)
@@ -102,7 +100,7 @@ class Rabbit(Agent):
         self.age = 0
         self.death_cause = "alive"
         genders_list = ["male", "female", "other"]
-        self.gender = random.choices(genders_list, k=1, weights=[0.5, 0.5, 0.2])[0]
+        self.gender = random.choices(genders_list, k=1, weights=[0.5, 0.5, 0])[0]
         self.change_image(0)
 
     def update(self):
@@ -113,7 +111,7 @@ class Rabbit(Agent):
         # Increase the age of the animal
         self.age += self.config.aging_rate
         # Decrease the energy of the rabbit
-        self.energy -= (self.config.energy_decrease_rate_fox*self.age)
+        self.energy -= (self.config.energy_decrease_rate_rabbit*self.age)
         # If the rabbit has no energy, it dies
         if self.energy <= 0:
             self.death_cause = "starvation"
@@ -143,7 +141,7 @@ class Rabbit(Agent):
         # possible partner are old enough, reproduce with given probability
         if self.age < 0.3:
             return
-        
+
         partner = (self.in_proximity_accuracy()
                        .without_distance()
                        .filter_kind(Rabbit)
@@ -153,6 +151,7 @@ class Rabbit(Agent):
                   )
         if partner is not None and util.probability(self.config.rabbit_reproduction_prob) and self.energy >= 0.5:
             # A female can only be cloned and it must meet a male to do it
+
             if self.gender == ["female"] and partner.gender == 'male':
                 # Currently only gets 3 offspring, should it be more?
                 for n in range(0, self.config.offspring_number):
@@ -160,8 +159,8 @@ class Rabbit(Agent):
                 # Reproduction takes energy, so decrease energy
                 self.energy /= 2
 
-            
-            
+
+
 class Grass(Agent):
     config: CompetitionConfig
 
