@@ -19,7 +19,8 @@ class CompetitionConfig(Config):
     energy_decrease_rate_fox: float = 0.03
     grass_grow_rate: int = 150
     aging_rate: float = 0.001
-    offspring_number: int = 3
+    rabbit_offspring_number: int = 3
+    fox_offspring_number: int = 3
 
     def weights(self) -> tuple[float]:
         return (self)
@@ -84,8 +85,8 @@ class Fox(Agent):
                   )
         if partner is not None and util.probability(self.config.fox_reproduction_prob):
             if self.gender == "female" and partner.gender == "male":
-                # Currently only gets one offspring, should it be more?
-                self.reproduce()
+                for n in range(0, self.config.fox_offspring_number):
+                    self.reproduce()
             # Reproduction takes energy, so decrease energy
             self.energy /= 2
 
@@ -154,7 +155,7 @@ class Rabbit(Agent):
 
             if self.gender == "female" and partner.gender == 'male':
                 # Currently only gets 3 offspring, should it be more?
-                for n in range(0, self.config.offspring_number):
+                for n in range(0, self.config.rabbit_offspring_number):
                     self.reproduce()
                 # Reproduction takes energy, so decrease energy
                 self.energy /= 2
