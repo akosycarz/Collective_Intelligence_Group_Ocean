@@ -3,6 +3,7 @@ from matplotlib import image
 
 import pygame as pg
 from pygame.math import Vector2
+from sklearn import neighbors
 from vi import Agent, Simulation, obstacle
 from vi.config import Config, dataclass, deserialize
 
@@ -10,13 +11,14 @@ from vi.config import Config, dataclass, deserialize
 @deserialize
 @dataclass
 class FlockingConfig(Config):
-    alignment_weight: float = 4.5
-    cohesion_weight: float = 5
-    separation_weight: float = 5
+    alignment_weight: float = 5
+    cohesion_weight: float = 6
+    separation_weight: float = 6
     delta_time: float = 3
     mass: int = 30
     maxVelocity: int = 2
     mode: str = "outside obstacle"
+    start = True
 
     def weights(self) -> tuple[float , float , float]:
         return (self.alignment_weight , self.cohesion_weight , self.separation_weight)
@@ -26,8 +28,57 @@ class FlockingConfig(Config):
 class Bird(Agent):
     config: FlockingConfig
 
+    def on_spawn(self):
+        # We choose a random starting position that is or is not inside the 
+        # obstacle depending on mode
+        prng = self.shared.prng_move
+        if self.config.mode == "outside obstacle":
+            x = prng.uniform(286, 750)
+            y = prng.uniform(286, 750)
+            self.pos = Vector2((x, y))
+        elif self.config.mode == "inside obstacle":
+            x = prng.uniform(87, 286)
+            y = prng.uniform(87, 286)
+            self.pos = Vector2((x, y))
+        
+
     def update(self):
-        pass
+        neighbours = list(self.in_proximity_accuracy())
+        #intersections = self.obstacle_intersections(scale=2)
+        # For an intersection, check which side it is and then make sure the boids go the opposite way
+        # Obstacle Avoidance
+        """obstacle_hit = pg.sprite.spritecollideany(self, self._obstacles, pg.sprite.collide_mask)  # type: ignore
+        collision = bool(obstacle_hit)
+
+        # Reverse direction when colliding with an obstacle.
+        if collision & self._still_stuck:
+            self.move.rotate_ip(180)
+            self._still_stuck = True
+
+        if not collision:
+            self._still_stuck = True
+
+        # Actually update the position at last.
+        self.pos += self.move"""
+
+        """for i in intersections:
+            print(self.id)
+            print(i)
+        if self.:
+            self.move.rotate_ip(180)
+            self.pos += self.move"""
+        self.collide = True
+        # Try if intersects with obstacle, turn around & the same for neighbours
+        if self.obstacle_intersections(scale=1):
+            if (self.pos.x > 85) & (self.pos.x < 295) & (self.pos.y > 85) & (self.pos.y < 295) & self.collide:
+                self.move.rotate_ip(180)
+                self.pos += self.move
+                self.collide = True
+                for i, _ in neighbours:
+                    i.move = self.move
+        else:
+            self.collide = False
+            
         
     def change_position(self):
         # Pac-man-style teleport to the other end of the screen when trying to escape
