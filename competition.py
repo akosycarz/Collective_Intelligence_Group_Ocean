@@ -14,18 +14,18 @@ import random
 class CompetitionConfig(Config):
     # Add all parameters here
     rabbit_reproduction_prob: float = 0.01
-    # 0.1, 0.075, 0.05, 0.025, 0.01, 0.0075, 0.005, 0.0025, 0.001
+
     fox_reproduction_prob: float = 0.5
-    energy_decrease_rate: float = 0.005
-    # 0.1, 0.01, 0.007, 0.005, 0.001, 0.0005, 0.0001
+    energy_decrease_rate: float = 0.002
+
     # aging_rate: float = 0.02
     rabbit_offspring_number: int = 3
     fox_offspring_number: int = 3
     hunger_threshold: float = 0.8
     fox_reproduction_threshold: float = 0.5
-    # 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1
+
     rabbit_reproduction_threshold: float = 0.5
-    # 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1
+
     # fox_fertility_age: int = 10
     # rabbit_fertility_age: int = 10
 
@@ -39,7 +39,7 @@ class Fox(Agent):
 
     def on_spawn(self):
         # All agents start with the same energy level
-        self.energy = 1
+        self.energy =  1
         # All animals have age, and they can only live for a specific time
         # self.age = 0
         self.death_cause = "alive"
@@ -57,7 +57,6 @@ class Fox(Agent):
         # Decrease the energy of the fox
         self.energy -= self.config.energy_decrease_rate
         #*(self.age/100))
-        print(self.energy)
         # If the fox has no energy, it dies
         if self.energy <= 0:
             self.death_cause = "starvation"
@@ -122,7 +121,7 @@ class Rabbit(Agent):
         #self.age += self.config.aging_rate
         # Decrease the energy of the rabbit
         self.energy -= self.config.energy_decrease_rate
-        print(self.energy)
+        #print(self.energy)
         #*(self.age/100))
         # If the rabbit has no energy, it dies
         if self.energy <= 0:
@@ -171,6 +170,12 @@ class Rabbit(Agent):
                 self.energy /= 2
 
 
+frames = 0
+def secCounter():
+    global frames
+    frames += 1
+    if frames / 60 == 1:
+        print('seconds passed:', frames/60)
 
 class Grass(Agent):
     config: CompetitionConfig
@@ -196,6 +201,7 @@ class Grass(Agent):
             self.reproduce()
 
 
+
 config = Config()
 n_fox = 50
 n_rabbit = 50
@@ -212,10 +218,9 @@ df = (
             movement_speed=1,
             radius=15,
             seed=1,
-            window=Window(width=n*10, height=n*10),
-            duration=60*60,
-            # 20*60, 60*60, 
-            #fps_limit=0,
+            window=Window(width=n*8, height=n*8),
+            duration=90*60,
+            fps_limit=60,
         )
     )
     .batch_spawn_agents(n_fox, Fox, images=["images/white.png", "images/red.png", "images/green.png"])
@@ -231,6 +236,13 @@ df = (
 )
 
 print(df)
+for n in range(0, len(df['frame'])):
+    if df['frame'][n] == (20*60):
+        print(df.row(n))
+    if df['frame'][n] == (60*60):
+        print(df.row(n))
+
+
 #n_new = df.get_column("number of agents")[-3] + df.get_column("number of agents")[-1]
 #print('Proportion of foxes of all agents: {}'.format(df.get_column("number of agents")[-3] / n_new))
 #print('Proportion of rabbits of all agents: {}'.format(df.get_column("number of agents")[-1] / n_new))
