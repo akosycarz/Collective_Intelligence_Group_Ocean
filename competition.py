@@ -13,14 +13,21 @@ import random
 @dataclass
 class CompetitionConfig(Config):
     # Add all parameters here
-    rabbit_reproduction_prob: float = 0.7
-    fox_reproduction_prob: float = 0.6
-    energy_decrease_rate_rabbit: float = 0.01
-    energy_decrease_rate_fox: float = 0.01
-    grass_grow_rate: int = 150
-    aging_rate: float = 0.02
+    rabbit_reproduction_prob: float = 0.01
+    # 0.1, 0.075, 0.05, 0.025, 0.01, 0.0075, 0.005, 0.0025, 0.001
+    fox_reproduction_prob: float = 0.5
+    energy_decrease_rate: float = 0.005
+    # 0.1, 0.01, 0.007, 0.005, 0.001, 0.0005, 0.0001
+    # aging_rate: float = 0.02
     rabbit_offspring_number: int = 3
     fox_offspring_number: int = 3
+    hunger_threshold: float = 0.8
+    fox_reproduction_threshold: float = 0.5
+    # 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1
+    rabbit_reproduction_threshold: float = 0.5
+    # 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1
+    # fox_fertility_age: int = 10
+    # rabbit_fertility_age: int = 10
 
     def weights(self) -> tuple[float]:
         return (self)
@@ -34,10 +41,10 @@ class Fox(Agent):
         # All agents start with the same energy level
         self.energy = 1
         # All animals have age, and they can only live for a specific time
-        self.age = 0
+        # self.age = 0
         self.death_cause = "alive"
         genders_list = ["male", "female", "other"]
-        self.gender = random.choices(genders_list, k=1, weights=[0.4, 0.4, 0.2])[0]
+        self.gender = random.choices(genders_list, k=1, weights=[0.5, 0.5, 0.0])[0]
         self.change_image(1)
 
     def update(self):
@@ -46,9 +53,11 @@ class Fox(Agent):
         self.save_data("kind", "fox")
         self.save_data("death_cause", self.death_cause)
         # Increase the age of the animal
-        self.age += self.config.aging_rate
+        #self.age += self.config.aging_rate
         # Decrease the energy of the fox
-        self.energy -= (self.config.energy_decrease_rate_fox*(self.age/100))
+        self.energy -= self.config.energy_decrease_rate
+        #*(self.age/100))
+        print(self.energy)
         # If the fox has no energy, it dies
         if self.energy <= 0:
             self.death_cause = "starvation"
@@ -60,7 +69,7 @@ class Fox(Agent):
                       .first()
                  )
         # If there is a rabbit, eat it and energy increases
-        if rabbit is not None and self.energy < 0.8:
+        if rabbit is not None and self.energy < self.config.hunger_threshold:
             rabbit.death_cause = "eaten"
             rabbit.kill()
             self.energy = 1
@@ -74,16 +83,16 @@ class Fox(Agent):
     def sexual_reproduction(self):
         # If there is another fox near, and both this fox and the possible 
         # partner are old enough, reproduce with given probability
-        if self.age < 10:
-            return 
+        #if self.age < self.config.fox_fertility_age:
+        #    return 
         
         partner = (self.in_proximity_accuracy()
                        .without_distance()
                        .filter_kind(Fox)
-                       .filter(lambda agent: agent.age > 10)
+                       #.filter(lambda agent: agent.age > self.config.fox_fertility_age)
                        .first()
                   )
-        if partner is not None and util.probability(self.config.fox_reproduction_prob) and self.energy >= 0.3:
+        if partner is not None and util.probability(self.config.fox_reproduction_prob) and self.energy >= self.config.fox_reproduction_threshold:
             if self.gender == "female" and partner.gender == "male":
                 for n in range(0, self.config.fox_offspring_number):
                     self.reproduce()
@@ -96,9 +105,9 @@ class Rabbit(Agent):
         
     def on_spawn(self):
         # All agents start with the same energy level
-        self.energy = 0.49
+        self.energy = 1
         # All animals have age, and they can only live for a specific time
-        self.age = 0
+        # self.age = 0
         self.death_cause = "alive"
         genders_list = ["male", "female", "other"]
         self.gender = random.choices(genders_list, k=1, weights=[0.5, 0.5, 0])[0]
@@ -110,9 +119,11 @@ class Rabbit(Agent):
         self.save_data("kind", "rabbit")
         self.save_data("death_cause", self.death_cause)
         # Increase the age of the animal
-        self.age += self.config.aging_rate
+        #self.age += self.config.aging_rate
         # Decrease the energy of the rabbit
-        self.energy -= (self.config.energy_decrease_rate_fox*(self.age/100))
+        self.energy -= self.config.energy_decrease_rate
+        print(self.energy)
+        #*(self.age/100))
         # If the rabbit has no energy, it dies
         if self.energy <= 0:
             self.death_cause = "starvation"
@@ -140,16 +151,16 @@ class Rabbit(Agent):
     def sexual_reproduction(self):
         # If there is another rabbit near, and both this rabbit and the 
         # possible partner are old enough, reproduce with given probability
-        if self.age < 10:
-            return
+        #if self.age < self.config.rabbit_fertility_age:
+        #    return
 
         partner = (self.in_proximity_accuracy()
                        .without_distance()
                        .filter_kind(Rabbit)
-                       .filter(lambda agent: agent.age > 10)
+                       #.filter(lambda agent: agent.age > self.config.rabbit_fertility_age)
                        .first()
                   )
-        if partner is not None and util.probability(self.config.rabbit_reproduction_prob) and self.energy >= 0.5:
+        if partner is not None and util.probability(self.config.rabbit_reproduction_prob) and self.energy >= self.config.rabbit_reproduction_threshold:
             # A female can only be cloned and it must meet a male to do it
 
             if self.gender == "female" and partner.gender == 'male':
@@ -186,8 +197,8 @@ class Grass(Agent):
 
 
 config = Config()
-n_fox = 30
-n_rabbit = 30
+n_fox = 50
+n_rabbit = 50
 n_grass = 1000
 n = n_fox + n_rabbit
 config.window.height = n*10
@@ -203,6 +214,7 @@ df = (
             seed=1,
             window=Window(width=n*10, height=n*10),
             duration=60*60,
+            # 20*60, 60*60, 
             #fps_limit=0,
         )
     )
@@ -219,9 +231,9 @@ df = (
 )
 
 print(df)
-n_new = df.get_column("number of agents")[-3] + df.get_column("number of agents")[-1]
-print('Proportion of foxes of all agents: {}'.format(df.get_column("number of agents")[-3] / n_new))
-print('Proportion of rabbits of all agents: {}'.format(df.get_column("number of agents")[-1] / n_new))
+#n_new = df.get_column("number of agents")[-3] + df.get_column("number of agents")[-1]
+#print('Proportion of foxes of all agents: {}'.format(df.get_column("number of agents")[-3] / n_new))
+#print('Proportion of rabbits of all agents: {}'.format(df.get_column("number of agents")[-1] / n_new))
 
 # Plot the number of animals per frame
 #plot1 = sns.relplot(x=df["frame"], y=df["number of agents"], hue= df["kind"], kind="line")
