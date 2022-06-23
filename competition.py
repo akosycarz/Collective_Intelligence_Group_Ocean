@@ -24,7 +24,7 @@ class CompetitionConfig(Config):
     hunger_threshold: float = 0.8
     fox_reproduction_threshold: float = 0.5
 
-    rabbit_reproduction_threshold: float = 0.5
+    rabbit_reproduction_threshold: float = 0.9
 
     # fox_fertility_age: int = 10
     # rabbit_fertility_age: int = 10
