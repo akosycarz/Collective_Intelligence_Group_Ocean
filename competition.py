@@ -219,7 +219,7 @@ df = (
             radius=15,
             seed=1,
             window=Window(width=n*8, height=n*8),
-            duration=90*60,
+            duration=120*60,
             fps_limit=60,
         )
     )
