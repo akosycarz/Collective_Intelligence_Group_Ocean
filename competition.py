@@ -24,7 +24,7 @@ class CompetitionConfig(Config):
     hunger_threshold: float = 0.8
     fox_reproduction_threshold: float = 0.5
 
-    rabbit_reproduction_threshold: float = 0.9
+    rabbit_reproduction_threshold: float = 0.5
 
     # fox_fertility_age: int = 10
     # rabbit_fertility_age: int = 10
@@ -91,7 +91,8 @@ class Fox(Agent):
                        #.filter(lambda agent: agent.age > self.config.fox_fertility_age)
                        .first()
                   )
-        if partner is not None and util.probability(self.config.fox_reproduction_prob) and self.energy >= self.config.fox_reproduction_threshold:
+        if partner is not None and util.probability(self.config.fox_reproduction_prob) \
+                and self.energy >= self.config.fox_reproduction_threshold:
             if self.gender == "female" and partner.gender == "male":
                 for n in range(0, self.config.fox_offspring_number):
                     self.reproduce()
