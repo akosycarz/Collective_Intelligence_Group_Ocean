@@ -36,7 +36,7 @@ class Fox(Agent):
 
     def on_spawn(self):
         # All agents start with the same energy level
-        self.energy = 1
+        self.energy =  1
         # All animals have age, and they can only live for a specific time
         # self.age = 0
         self.death_cause = "alive"
@@ -88,7 +88,8 @@ class Fox(Agent):
                        #.filter(lambda agent: agent.age > self.config.fox_fertility_age)
                        .first()
                   )
-        if partner is not None and util.probability(self.config.fox_reproduction_prob) and self.energy >= self.config.fox_reproduction_threshold:
+        if partner is not None and util.probability(self.config.fox_reproduction_prob) \
+                and self.energy >= self.config.fox_reproduction_threshold:
             if self.gender == "female" and partner.gender == "male":
                 for n in range(0, self.config.fox_offspring_number):
                     self.reproduce()
@@ -168,6 +169,12 @@ class Rabbit(Agent):
                 self.energy /= 2
 
 
+frames = 0
+def secCounter():
+    global frames
+    frames += 1
+    if frames / 60 == 1:
+        print('seconds passed:', frames/60)
 
 class Grass(Agent):
     config: CompetitionConfig
@@ -191,6 +198,7 @@ class Grass(Agent):
         # The grass grows back if it dies
         if self.is_dead():
             self.reproduce()
+
 
 
 config = Config()
