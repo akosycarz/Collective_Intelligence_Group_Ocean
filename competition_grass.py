@@ -9,6 +9,8 @@ from vi.config import Window, Config, dataclass, deserialize
 @dataclass
 class CompetitionConfig(Config):
     # Add all parameters here
+    agents: int = 0
+    reproduce: bool = True
     rabbit_reproduction_prob: float = 0.01
     fox_reproduction_prob: float = 0.01
     grass_grow_prob: float = 0.5
@@ -16,6 +18,7 @@ class CompetitionConfig(Config):
     hunger_threshold: float = 0.8
     fox_reproduction_threshold: float = 0.5
     rabbit_reproduction_threshold: float = 0.3
+    caring_capacity: int = 2000
 
     def weights(self) -> tuple[float]:
         return (self)
@@ -41,6 +44,7 @@ class Fox(Agent):
         if self.energy <= 0:
             self.death_cause = "starvation"
             self.kill()
+            self.config.agents -= 1
         # Check if there are rabbits near
         rabbit = (self.in_proximity_accuracy()
                       .without_distance()
@@ -52,11 +56,18 @@ class Fox(Agent):
             rabbit.death_cause = "eaten"
             rabbit.kill()
             self.energy = 1
-        # Asexual reproduction:
-        if util.probability(self.config.fox_reproduction_prob) and self.energy >= self.config.fox_reproduction_threshold:
-            self.reproduce()
-            # Reproduction takes energy, so the energy level of the animal decreasdes
-            self.energy /= 2
+            self.config.agents -= 1
+        # Reproduce if caring capacity is not exceeded
+        if self.config.agents >= self.config.caring_capacity:
+            self.config.reproduce = False
+        else: self.config.reproduce = True
+        if self.config.reproduce:
+            # Asexual reproduction:
+            if util.probability(self.config.fox_reproduction_prob) and self.energy >= self.config.fox_reproduction_threshold:
+                self.reproduce()
+                # Reproduction takes energy, so the energy level of the animal decreasdes
+                self.energy /= 2
+                self.config.agents += 1
 
 
 class Rabbit(Agent):
@@ -78,6 +89,7 @@ class Rabbit(Agent):
         if self.energy <= 0:
             self.death_cause = "starvation"
             self.kill() 
+            self.config.agents -= 1
         # Check if there is grass near
         grass = (self.in_proximity_accuracy()
                      .without_distance()
@@ -88,13 +100,19 @@ class Rabbit(Agent):
         if grass is not None:
             grass.death_cause = "eaten"
             grass.kill()
-            self.energy += 0.05
-        # Asexual reproduction:
-        # Reproduce with given probability
-        if util.probability(self.config.rabbit_reproduction_prob) and self.energy >= self.config.rabbit_reproduction_threshold:
-            self.reproduce()
-            # Reproduction takes energy, so the energy level of the animal decreasdes
-            self.energy /= 2
+            self.energy += 1
+        # Reproduce if caring capacity is not exceeded
+        if self.config.agents >= self.config.caring_capacity:
+            self.config.reproduce = False
+        else: self.config.reproduce = True
+        if self.config.reproduce:
+            # Asexual reproduction:
+            # Reproduce with given probability
+            if util.probability(self.config.rabbit_reproduction_prob) and self.energy >= self.config.rabbit_reproduction_threshold:
+                self.reproduce()
+                # Reproduction takes energy, so the energy level of the animal decreasdes
+                self.energy /= 2
+                self.config.agents += 1
 
 
 class Grass(Agent):
@@ -131,6 +149,7 @@ df = (
             seed=1,
             window=Window(width=n*10, height=n*10),
             duration=20*60,
+            agents=n,
             # 20*60, 60*60, 
             #fps_limit=0,
         )

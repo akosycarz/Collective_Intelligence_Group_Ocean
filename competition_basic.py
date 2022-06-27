@@ -9,11 +9,14 @@ from vi.config import Window, Config, dataclass, deserialize
 @dataclass
 class CompetitionConfig(Config):
     # Add all parameters here
+    agents: int = 0
+    reproduce: bool = True
     rabbit_reproduction_prob: float = 0.01
     fox_reproduction_prob: float = 0.5
     energy_decrease_rate: float = 0.002
     hunger_threshold: float = 0.8
     fox_reproduction_threshold: float = 0.5
+    caring_capacity: int = 1000
 
     def weights(self) -> tuple[float]:
         return (self)
@@ -26,7 +29,7 @@ class Fox(Agent):
 
     def on_spawn(self):
         # All agents start with the same energy level
-        self.energy = 0.5 - 0.01
+        self.energy = 1
         self.death_cause = "alive"
         self.change_image(1)
 
@@ -40,6 +43,7 @@ class Fox(Agent):
         if self.energy <= 0:
             self.death_cause = "starvation"
             self.kill()
+            self.config.agents -= 1
         # Check if there are rabbits near
         rabbit = (self.in_proximity_accuracy()
                   .without_distance()
@@ -50,13 +54,19 @@ class Fox(Agent):
         if rabbit is not None and self.energy < self.config.hunger_threshold:
             rabbit.death_cause = "eaten"
             rabbit.kill()
+            self.config.agents -= 1
             self.energy = 1
-        # Reproduce
-        self.asexualReproduction()
+        # Reproduce if caring capacity is not exceeded
+        if self.config.agents >= self.config.caring_capacity:
+            self.config.reproduce = False
+        else: self.config.reproduce = True
+        if self.config.reproduce:
+            self.asexualReproduction()
 
     def asexualReproduction(self):
         if util.probability(self.config.rabbit_reproduction_prob):
             self.reproduce()
+            self.config.agents += 1
             # Reproduction takes energy, so decrease energy
             self.energy /= 2
 
@@ -73,12 +83,18 @@ class Rabbit(Agent):
         # Save the type of the animal
         self.save_data("kind", "rabbit")
         self.save_data("death_cause", self.death_cause)
-        # Reproduce
-        self.asexualReproduction()
+        # Reproduce if caring capacity is not exceeded
+        if self.config.agents >= self.config.caring_capacity:
+            self.config.reproduce = False
+        else: self.config.reproduce = True
+        if self.config.reproduce:
+            self.asexualReproduction()
 
     def asexualReproduction(self):
         if util.probability(self.config.rabbit_reproduction_prob):
             self.reproduce()
+            self.config.agents += 1
+
 
 
 config = Config()
@@ -94,6 +110,7 @@ df = (
             radius=15,
             seed=1,
             window=Window(width=n * 6, height=n * 6),
+            agents=n,
             duration=120 * 60,
             fps_limit=60,
         )

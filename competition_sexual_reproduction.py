@@ -3,7 +3,6 @@ import seaborn as sns
 
 from vi import Agent, Simulation, util
 from vi.config import Window, Config, dataclass, deserialize
-from numpy.random import choice
 
 import random
 
@@ -11,6 +10,8 @@ import random
 @dataclass
 class CompetitionConfig(Config):
     # Add all parameters here
+    agents: int = 0
+    reproduce: bool = True
     rabbit_reproduction_prob: float = 0.01
     fox_reproduction_prob: float = 0.07
     energy_decrease_rate: float = 0.001
@@ -18,6 +19,7 @@ class CompetitionConfig(Config):
     fox_offspring_number: int = 3
     hunger_threshold: float = 0.8
     fox_reproduction_threshold: float = 0.5
+    caring_capacity: int = 1000
 
     def weights(self) -> tuple[float]:
         return (self)
@@ -46,6 +48,7 @@ class Fox(Agent):
         if self.energy <= 0:
             self.death_cause = "starvation"
             self.kill()
+            self.config.agents -= 1
         # Check if there are rabbits near
         rabbit = (self.in_proximity_accuracy()
                       .without_distance()
@@ -57,7 +60,13 @@ class Fox(Agent):
             rabbit.death_cause = "eaten"
             rabbit.kill()
             self.energy = 1
-        self.sexual_reproduction()
+            self.config.agents -= 1
+        # Reproduce if caring capacity is not exceeded
+        if self.config.agents >= self.config.caring_capacity:
+            self.config.reproduce = False
+        else: self.config.reproduce = True
+        if self.config.reproduce:
+            self.sexual_reproduction()
     
     def sexual_reproduction(self):
         # If there is another fox near, reproduce with given probability  
@@ -72,6 +81,7 @@ class Fox(Agent):
                     self.reproduce()
             # Reproduction takes energy, so decrease energy
             self.energy /= 2
+            self.config.agents += 1
 
 
 class Rabbit(Agent):
@@ -89,7 +99,12 @@ class Rabbit(Agent):
         self.save_data("kind", "rabbit")
         self.save_data("death_cause", self.death_cause)
         # Sexual reproduction:
-        self.sexual_reproduction()
+        # Reproduce if caring capacity is not exceeded
+        if self.config.agents >= self.config.caring_capacity:
+            self.config.reproduce = False
+        else: self.config.reproduce = True
+        if self.config.reproduce:
+            self.sexual_reproduction()
         
     def sexual_reproduction(self):
         # If there is another rabbit near, reproduce with given probability
@@ -105,13 +120,13 @@ class Rabbit(Agent):
                 # Currently only gets 3 offspring, should it be more?
                 for n in range(0, self.config.rabbit_offspring_number):
                     self.reproduce()
+                    self.config.agents += 1
 
 
 
 config = Config()
 n_fox = 50
 n_rabbit = 50
-n_grass = 1000
 n = n_fox + n_rabbit
 
 df = (
@@ -123,6 +138,7 @@ df = (
             seed=1,
             window=Window(width=n*10, height=n*10),
             duration=20*60,
+            agents=n,
             # 20*60, 60*60, 
             #fps_limit=0,
         )
