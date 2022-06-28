@@ -15,8 +15,6 @@ class CompetitionConfig(Config):
     rabbit_reproduction_prob: float = 0.05
     fox_reproduction_prob: float = 0.1
     energy_decrease_rate: float = 0.02
-    rabbit_offspring_number: int = 3
-    fox_offspring_number: int = 3
     hunger_threshold: float = 0.8
     fox_reproduction_threshold: float = 0.5
     caring_capacity: int = 1000
@@ -77,11 +75,10 @@ class Fox(Agent):
                   )
         if partner is not None and util.probability(self.config.fox_reproduction_prob) and self.energy >= self.config.fox_reproduction_threshold:
             if self.gender == "female" and partner.gender == "male":
-                for n in range(0, self.config.fox_offspring_number):
-                    self.reproduce()
-            # Reproduction takes energy, so decrease energy
-            self.energy /= 2
-            self.config.agents += 1
+                self.reproduce()
+                # Reproduction takes energy, so decrease energy
+                self.energy /= 2
+                self.config.agents += 1
 
 
 class Rabbit(Agent):
@@ -116,10 +113,9 @@ class Rabbit(Agent):
         if partner is not None and util.probability(self.config.rabbit_reproduction_prob):
             # A female can only be cloned and it must meet a male to do it
             if self.gender == "female" and partner.gender == 'male':
-                # Currently only gets 3 offspring, should it be more?
-                for n in range(0, self.config.rabbit_offspring_number):
-                    self.reproduce()
-                    self.config.agents += 1
+                # Currently only gets 1 offspring, should it be more?
+                self.reproduce()
+                self.config.agents += 1
 
 
 
