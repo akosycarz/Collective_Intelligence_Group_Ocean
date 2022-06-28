@@ -1,7 +1,7 @@
 import polars as pl
 import seaborn as sns
 
-from vi import Agent, Simulation, util
+from vi import Agent, HeadlessSimulation, util
 from vi.config import Window, Config, dataclass, deserialize
 
 
@@ -11,9 +11,9 @@ class CompetitionConfig(Config):
     # Add all parameters here
     agents: int = 0
     reproduce: bool = True
-    rabbit_reproduction_prob: float = 0.01
-    fox_reproduction_prob: float = 0.5
-    energy_decrease_rate: float = 0.002
+    rabbit_reproduction_prob: float = 0.05
+    fox_reproduction_prob: float = 0.1
+    energy_decrease_rate: float = 0.02
     hunger_threshold: float = 0.8
     fox_reproduction_threshold: float = 0.5
     caring_capacity: int = 1000
@@ -106,16 +106,16 @@ experiments = 30
 for i in range(experiments):
     filename = "competition_basic_{}.csv".format(i)
     df = (
-        Simulation(
+        HeadlessSimulation(
             CompetitionConfig(
                 image_rotation=True,
                 movement_speed=1,
                 radius=15,
-                seed=1,
-                window=Window(width=n * 6, height=n * 6),
+                seed=i,
+                window=Window(width=n * 10, height=n * 10),
                 agents=n,
-                duration=120 * 60,
-                fps_limit=60,
+                duration=300 * 60,
+                fps_limit=0,
             )
         )
             .batch_spawn_agents(n_fox, Fox, images=["images/white.png", "images/red.png"])

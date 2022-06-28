@@ -1,7 +1,7 @@
 import polars as pl
 import seaborn as sns
 
-from vi import Agent, Simulation, util
+from vi import Agent, HeadlessSimulation, util
 from vi.config import Window, Config, dataclass, deserialize
 
 import random
@@ -12,9 +12,9 @@ class CompetitionConfig(Config):
     # Add all parameters here
     agents: int = 0
     reproduce: bool = True
-    rabbit_reproduction_prob: float = 0.01
-    fox_reproduction_prob: float = 0.07
-    energy_decrease_rate: float = 0.001
+    rabbit_reproduction_prob: float = 0.05
+    fox_reproduction_prob: float = 0.1
+    energy_decrease_rate: float = 0.02
     rabbit_offspring_number: int = 3
     fox_offspring_number: int = 3
     hunger_threshold: float = 0.8
@@ -108,7 +108,6 @@ class Rabbit(Agent):
         
     def sexual_reproduction(self):
         # If there is another rabbit near, reproduce with given probability
-
         partner = (self.in_proximity_accuracy()
                        .without_distance()
                        .filter_kind(Rabbit)
@@ -128,33 +127,36 @@ config = Config()
 n_fox = 50
 n_rabbit = 50
 n = n_fox + n_rabbit
+experiments = 30
 
-df = (
-    Simulation(
-        CompetitionConfig(
-            image_rotation=True,
-            movement_speed=1,
-            radius=15,
-            seed=1,
-            window=Window(width=n*10, height=n*10),
-            duration=20*60,
-            agents=n,
-            # 20*60, 60*60, 
-            #fps_limit=0,
+for i in range(experiments):
+    filename = "competition_sexual_reproduction_{}.csv".format(i)
+    df = (
+        HeadlessSimulation(
+            CompetitionConfig(
+                image_rotation=True,
+                movement_speed=1,
+                radius=15,
+                seed=i,
+                window=Window(width=n*10, height=n*10),
+                duration=300*60,
+                agents=n,
+                fps_limit=0,
+            )
         )
+        .batch_spawn_agents(n_fox, Fox, images=["images/white.png", "images/red.png"])
+        .batch_spawn_agents(n_rabbit, Rabbit, images=["images/white.png", "images/red.png"])
+        .run()
+        .snapshots
+        # Get the number of animals per death cause per timeframe 
+        .groupby(["frame", "kind", "death_cause", "gender"])
+        # Get the number of rabbits and foxes per timeframe
+        .agg(pl.count('id').alias("number of agents"))
+        .sort(["frame", "kind", "death_cause", "gender"])
+        .write_csv(filename)
     )
-    .batch_spawn_agents(n_fox, Fox, images=["images/white.png", "images/red.png"])
-    .batch_spawn_agents(n_rabbit, Rabbit, images=["images/white.png", "images/red.png"])
-    .run()
-    .snapshots
-    # Get the number of animals per death cause per timeframe 
-    .groupby(["frame", "kind", "death_cause", "gender"])
-    # Get the number of rabbits and foxes per timeframe
-    .agg(pl.count('id').alias("number of agents"))
-    .sort(["frame", "kind", "death_cause", "gender"])
-)
 
-print(df)
+    print(df)
 
 #n_new = df.get_column("number of agents")[-3] + df.get_column("number of agents")[-1]
 #print('Proportion of foxes of all agents: {}'.format(df.get_column("number of agents")[-3] / n_new))
@@ -165,3 +167,4 @@ print(df)
 #hue=df["kind"], kind="line")
 #plt.legend(labels=["rabbits","grass", "foxes"])
 #plot1.savefig("number_agents.png", dpi=300)
+
