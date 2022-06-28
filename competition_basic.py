@@ -101,33 +101,37 @@ config = Config()
 n_fox = 50
 n_rabbit = 50
 n = n_fox + n_rabbit
+experiments = 30
 
-df = (
-    Simulation(
-        CompetitionConfig(
-            image_rotation=True,
-            movement_speed=1,
-            radius=15,
-            seed=1,
-            window=Window(width=n * 6, height=n * 6),
-            agents=n,
-            duration=120 * 60,
-            fps_limit=60,
+for i in range(experiments):
+    filename = "competition_basic_{}.csv".format(i)
+    df = (
+        Simulation(
+            CompetitionConfig(
+                image_rotation=True,
+                movement_speed=1,
+                radius=15,
+                seed=1,
+                window=Window(width=n * 6, height=n * 6),
+                agents=n,
+                duration=120 * 60,
+                fps_limit=60,
+            )
         )
+            .batch_spawn_agents(n_fox, Fox, images=["images/white.png", "images/red.png"])
+            .batch_spawn_agents(n_rabbit, Rabbit, images=["images/white.png", "images/red.png"])
+            .run()
+            .snapshots
+            # Get the number of animals per death cause per timeframe
+            .groupby(["frame", "kind", "death_cause"])
+            # Get the number of rabbits and foxes per timeframe
+            .agg(pl.count('id').alias("number of agents"))
+            .sort(["frame", "kind", "death_cause"])
+            .write_csv(filename)
     )
-        .batch_spawn_agents(n_fox, Fox, images=["images/white.png", "images/red.png"])
-        .batch_spawn_agents(n_rabbit, Rabbit, images=["images/white.png", "images/red.png"])
-        .run()
-        .snapshots
-        # Get the number of animals per death cause per timeframe
-        .groupby(["frame", "kind", "death_cause"])
-        # Get the number of rabbits and foxes per timeframe
-        .agg(pl.count('id').alias("number of agents"))
-        .sort(["frame", "kind", "death_cause"])
-)
 
-print(df)
+    #print(df)
 
-n_new = df.get_column("number of agents")[-2] + df.get_column("number of agents")[-1]
-print('Proportion of foxes of all agents: {}'.format(df.get_column("number of agents")[-2] / n_new))
-print('Proportion of rabbits of all agents: {}'.format(df.get_column("number of agents")[-1] / n_new))
+    #n_new = df.get_column("number of agents")[-2] + df.get_column("number of agents")[-1]
+    #print('Proportion of foxes of all agents: {}'.format(df.get_column("number of agents")[-2] / n_new))
+    #print('Proportion of rabbits of all agents: {}'.format(df.get_column("number of agents")[-1] / n_new))
