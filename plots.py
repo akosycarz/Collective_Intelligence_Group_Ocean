@@ -46,7 +46,7 @@ for i in range(30):
     grass = []
     frames_grass = []
 
-    filename = "competition_grass_{}.csv".format(i)
+    filename = "competition_{}.csv".format(i)
     df = open(filename, 'r').readlines()
 
     for i in range(len(df)):
@@ -68,7 +68,7 @@ for i in range(30):
 plt.legend(["rabbits", "foxes", "grass"])
 plt.xlabel('Frame')
 plt.ylabel('Number of agents')
-plt.savefig('line_grass.png')
+plt.savefig('line_all.png')
 
 
 def set_axis_style(ax, labels):
@@ -79,14 +79,14 @@ def set_axis_style(ax, labels):
     ax.set_xlabel('Sample name')
 
 # VIOLIN PLOT CODE FOR ALL/ONE SIMULATIONS:
-data_to_plot = []
+"""data_to_plot = []
 
 for i in range(15,16):
     rabbits = []
     foxes = []
     frames = []
 
-    filename = "competition_grass_{}.csv".format(i)
+    filename = "competition_sexual_reproduction_{}.csv".format(i)
     df = open(filename, 'r').readlines()
 
     for i in range(len(df)):
@@ -108,20 +108,23 @@ val = ax1.violinplot(data_to_plot, showmeans=True, showextrema=True, showmedians
 for j in range(len(val['bodies'])):
     if j % 2 == 0:
         val['bodies'][j].set_facecolor('blue')
+        val['bodies'][j].set_edgecolor('darkblue')
     else:
-        val['bodies'][j].set_edgecolor('red')
+        val['bodies'][j].set_facecolor('red')
+        val['bodies'][j].set_edgecolor('darkred')
 
 # set style for the axes
-#labels = ['1', '', '2', '', '3', '', '4', '', '5', '', '6', '', '7', '', 
+labels = ['rabbit', 'fox']
+#'1', '', '2', '', '3', '', '4', '', '5', '', '6', '', '7', '', 
 #'8', '', '9', '', '10', '', '11', '', '12', '', '13', '', '14', '', '15', 
 #'', '16', '', '17', '', '18', '', '19', '', '20', '', '21', '', '22', '', 
 #'23', '', '24', '', '25', '', '26', '', '27', '', '28', '', '29', '', '30', '']
-#set_axis_style(ax1, labels)
+set_axis_style(ax1, labels)
 
 ax1.set_xlabel("Simulation 15",size = 16,alpha=0.7)
 ax1.set_ylabel("Number of agents",size = 16,alpha=0.7)
 plt.legend(["rabbit", "fox"], loc='upper left')
-plt.savefig('violin1.png')
+plt.savefig('violin2.png')"""
 
 
 # VIOLIN PLOT CODE FOR ALL MODELS & ONE SIMULATION:

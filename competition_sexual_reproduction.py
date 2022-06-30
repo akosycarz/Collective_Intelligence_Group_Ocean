@@ -36,7 +36,7 @@ class Fox(Agent):
         self.change_image(1)
 
     def update(self):
-        self.save_data("gender", self.gender)
+        #self.save_data("gender", self.gender)
         # Save the type of the animal
         self.save_data("kind", "fox")
         self.save_data("death_cause", self.death_cause)
@@ -91,7 +91,7 @@ class Rabbit(Agent):
         self.change_image(0)
 
     def update(self):
-        self.save_data("gender", str(self.gender))
+        #self.save_data("gender", str(self.gender))
         # Save the type of the animal
         self.save_data("kind", "rabbit")
         self.save_data("death_cause", self.death_cause)
@@ -145,10 +145,12 @@ for i in range(experiments):
         .run()
         .snapshots
         # Get the number of animals per death cause per timeframe 
-        .groupby(["frame", "kind", "death_cause", "gender"])
+        #.groupby(["frame", "kind", "death_cause", "gender"])
+        .groupby(["frame", "kind", "death_cause"])
         # Get the number of rabbits and foxes per timeframe
         .agg(pl.count('id').alias("number of agents"))
-        .sort(["frame", "kind", "death_cause", "gender"])
+        #.sort(["frame", "kind", "death_cause", "gender"])
+        .sort(["frame", "kind", "death_cause"])
         .write_csv(filename)
     )
 

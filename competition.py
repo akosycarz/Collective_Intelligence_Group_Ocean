@@ -47,7 +47,6 @@ class Fox(Agent):
         self.save_data("gender", self.gender)
         # Save the type of the animal
         self.save_data("kind", "fox")
-        self.save_data("death_cause", self.death_cause)
         # Increase the age of the animal
         #self.age += self.config.aging_rate
         # Decrease the energy of the fox
@@ -76,6 +75,7 @@ class Fox(Agent):
         else: self.config.reproduce = True
         if self.config.reproduce:
             self.sexual_reproduction()
+        self.save_data("death_cause", self.death_cause)
     
     def sexual_reproduction(self):
         # If there is another fox near, and both this fox and the possible 
@@ -115,7 +115,6 @@ class Rabbit(Agent):
         self.save_data("gender", str(self.gender))
         # Save the type of the animal
         self.save_data("kind", "rabbit")
-        self.save_data("death_cause", self.death_cause)
         # Increase the age of the animal
         #self.age += self.config.aging_rate
         # Decrease the energy of the rabbit
@@ -145,6 +144,7 @@ class Rabbit(Agent):
         else: self.config.reproduce = True
         if self.config.reproduce:
             self.sexual_reproduction()
+        self.save_data("death_cause", self.death_cause)
         
     def sexual_reproduction(self):
         # If there is another rabbit near, and both this rabbit and the 
