@@ -23,32 +23,41 @@ plt.show()
 
 # BASIC FRAME/NUMBER OF ANIMALS PLOT CODE 
 
-rabbits = []
-foxes = []
-frames_rabbit = []
-frames_fox = []
-grass = []
-frames_grass = []
+for i in range(30):
+    rabbits = []
+    foxes = []
+    frames_rabbit = []
+    frames_fox = []
+    grass = []
+    frames_grass = []
 
-df = open("competition_grass_15.csv", 'r').readlines()
+    filename = "competition_grass_{}.csv".format(i)
+    df = open(filename, 'r').readlines()
 
-for i in range(len(df)):
-    line = df[i].split(',')
-    if line[1] == 'rabbit' and line[2] == 'alive':
-        rabbits.append(int(line[3]))
-        frames_rabbit.append(int(line[0]))
-    elif line[1] == 'fox' and line[2] == 'alive':
-        foxes.append(int(line[3]))
-        frames_fox.append(int(line[0]))
-    elif line[1] == 'grass' and line[2] == 'alive' and int(line[0]) < 2500:
-        grass.append(int(line[3]))
-        frames_grass.append(int(line[0]))
+    for i in range(len(df)):
+        line = df[i].split(',')
+        if line[1] == 'rabbit' and line[2] == 'alive':
+            rabbits.append(int(line[3]))
+            frames_rabbit.append(int(line[0]))
+        elif line[1] == 'fox' and line[2] == 'alive':
+            foxes.append(int(line[3]))
+            frames_fox.append(int(line[0]))
+        elif line[1] == 'grass' and line[2] == 'alive' and int(line[0]) < 2500:
+            grass.append(int(line[3]))
+            frames_grass.append(int(line[0]))
 
-# plot lines
-plt.plot(frames_rabbit, rabbits, label = "rabbits")
-plt.plot(frames_fox, foxes, label = "foxes")
-plt.plot(frames_grass, grass, label = "grass")
+    # plot lines
+    rabbit_label = "rabbits{}".format(i)
+    fox_label = "foxes{}".format(i)
+    grass_label = "grass{}".format(i)
+    plt.plot(frames_rabbit, rabbits, label = rabbit_label)
+    plt.plot(frames_fox, foxes, label = fox_label)
+    plt.plot(frames_grass, grass, label = grass_label)
 plt.legend()
 plt.xlabel('Frame')
 plt.ylabel('Number of agents')
 plt.savefig('juna.png')
+
+# Violin: one simulation, simulation 15
+# Violin: all simulations
+# Violin: last values from all simulations
