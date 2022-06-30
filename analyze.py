@@ -14,7 +14,7 @@ for i in range(30):
             starved_rabbit += 1
         elif line[1] == 'rabbit' and line[2] == 'eaten':
             killed_rabbit += 1
-        elif line[1] == 'fox' and line[2] == 'starved':
+        elif line[1] == 'fox' and line[2] == 'starvation':
             starved_fox += 1
 
 print(starved_rabbit/30, starved_fox/30, killed_rabbit/30)
