@@ -4,7 +4,7 @@ from matplotlib import image
 import pygame as pg
 from pygame.math import Vector2
 from sklearn import neighbors
-from vi import Agent, Simulation, obstacle
+from vi import Agent, Simulation
 from vi.config import Config, dataclass, deserialize
 
 

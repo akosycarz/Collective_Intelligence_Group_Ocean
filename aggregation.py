@@ -10,6 +10,10 @@ from pygame.math import Vector2
 from vi import Agent, Simulation, util
 from vi.config import Window, Config, dataclass, deserialize
 
+from matplotlib import image
+
+from sklearn import neighbors
+
 @deserialize
 @dataclass
 class AggregationConfig(Config):
@@ -32,7 +36,9 @@ class AggregationConfig(Config):
 class Cockroach(Agent):
     config: AggregationConfig
 
-    def on_spawn(self):
+
+
+    def on_spawn(self): #__init__ replacement
         # All agents start at the wandering state and with counter 0
         self.state = 'wandering'
         self.counter = 0
@@ -53,6 +59,39 @@ class Cockroach(Agent):
         
 
     def update(self):
+        # obstacle_hit = pg.sprite.spritecollideany(self, self._obstacles, pg.sprite.collide_mask)  # type: ignore
+        # collision = bool(obstacle_hit)
+
+        # # Reverse direction when colliding with an obstacle.
+        # if collision & self._still_stuck:
+        #     self.move.rotate_ip(180)
+        #     self._still_stuck = True
+
+        # if not collision:
+        #     self._still_stuck = True
+
+        # # Actually update the position at last.
+        # self.pos += self.move
+
+        # for i in intersections:
+        #     print(self.id)
+        #     print(i)
+        # if self.:
+        #     self.move.rotate_ip(180)
+        #     self.pos += self.mov
+
+        # neighbours = list(self.in_proximity_accuracy())
+        # self.collide = True
+        # # Try if intersects with obstacle, turn around & the same for neighbours
+        # if self.obstacle_intersections(scale=1):
+        #     if (self.pos.x > 85) & (self.pos.x < 295) & (self.pos.y > 85) & (self.pos.y < 295) & self.collide:
+        #         self.move.rotate_ip(180)
+        #         self.pos += self.move
+        #         self.collide = True
+        #         for i, _ in neighbours:
+        #             i.move = self.move
+        # else:
+        #     self.collide = False
         # Save the current state of the agent
         self.save_data("state", self.state)
         # The number of immediate neighbours
@@ -153,7 +192,7 @@ class Cockroach(Agent):
 
 
 config = Config()
-n = 150
+n = 100
 config.window.height = n*10
 config.window.width = n*10
 x, y = config.window.as_tuple()
@@ -166,18 +205,23 @@ df = (
             radius=125,
             seed=1,
             window=Window(width=n*10, height=n*10),
-            duration=240*60,
+            duration=2000,
             fps_limit=0,
         )
     )
-    .batch_spawn_agents(n, Cockroach, images=["images/white.png", "images/red.png"])
+    .batch_spawn_agents(1000, Cockroach, images=["/Users/ania/Desktop/Collective_Intelligence_Group_Ocean/images/white.png", "/Users/ania/Desktop/Collective_Intelligence_Group_Ocean/images/white.png"])
     # One circle: .spawn_site("images/circle.png", x//2, y//2)
     # Two same size circles: 
     #.spawn_site("images/circle.png", x//4, y//2)
     #.spawn_site("images/circle.png", (x//4)*3, y//2)
     # Two different sizde circles:
-    .spawn_site("images/bigger_big_circle.png", x//4, y//2)
-    .spawn_site("images/bigger_big_circle.png", (x//4)*3, y//2)
+    #.spawn_obstacle("/Users/ania/Desktop/Collective_Intelligence_Group_Ocean/images/bubble-full.png", x // 2, y //2)
+
+    .spawn_site("/Users/ania/Desktop/Collective_Intelligence_Group_Ocean/images/bigger_big_circle.png", x//4, y//4)
+    
+    # .spawn_site("/Users/ania/Desktop/Collective_Intelligence_Group_Ocean/images/bubble-full.png", (x//4)*2, y//2)
+    # .spawn_site("/Users/ania/Desktop/Collective_Intelligence_Group_Ocean/images/bigger_big_circle.png", (x//4)*3, (y//4)*3)
+    
     #.spawn_site("images/circle.png", (x//4)*3, y//2)
     .run()
     .snapshots
@@ -204,12 +248,14 @@ print('Proportion of agents in left aggregate: {}'.format(df.get_column("1st agg
 #print('Proportion of agents in big aggregate: {}'.format(df.get_column("1st aggregate size")[-1] / n))
 
 # Plot the number of stopped agents per frame
-plot1 = sns.relplot(x=df["frame"], y=df["number of stopped agents"], kind="line")
-plot1.savefig("stopped.png", dpi=300)
-plot2 = sns.relplot(x=df["frame"], y=df["2nd aggregate size"], kind="line")
-plot2.savefig("2nd_aggregate.png", dpi=300)
-plot3 = sns.relplot(x=df["frame"], y=df["1st aggregate size"], kind="line")
-plot3.savefig("1st_aggregate.png", dpi=300)
+plot1 = sns.relplot(x=df["frame"], y=df["number of stopped agents"], kind="line").set(title='Number of aggregated agents in population of size 1000')
+plot1.savefig("stopped1000.png", dpi=300)
+
+
+# plot2 = sns.relplot(x=df["frame"], y=df["2nd aggregate size"], kind="line")
+# plot2.savefig("2nd_aggregate.png", dpi=300)
+# plot3 = sns.relplot(x=df["frame"], y=df["1st aggregate size"], kind="line")
+# plot3.savefig("1st_aggregate.png", dpi=300)
 
 threePlots_x = df["frame"]
 # three plots
@@ -217,16 +263,16 @@ stopped_agents_y = df["number of stopped agents"]
 aggregSize_small_y = df["2nd aggregate size"]
 aggregSize_big_y = df["1st aggregate size"]
 
-# plot lines
-plt.plot(threePlots_x, stopped_agents_y, 
-    label = "number of stopped agents")
-plt.plot(threePlots_x, aggregSize_small_y, 
-    label = "2nd aggregate size")
-plt.plot(threePlots_x, aggregSize_big_y, 
-    label = "1st aggregate size")
-plt.legend()
-plt.xlabel('Frame')
-plt.ylabel('Number of agents')
-plt.savefig('Matti2.png')
+# # plot lines
+# plt.plot(threePlots_x, stopped_agents_y, 
+#     label = "number of stopped agents")
+# plt.plot(threePlots_x, aggregSize_small_y, 
+#     label = "2nd aggregate size")
+# plt.plot(threePlots_x, aggregSize_big_y, 
+#     label = "1st aggregate size")
+# plt.legend()
+# plt.xlabel('Frame')
+# plt.ylabel('Number of agents')
+# plt.savefig('Matti2.png')
 
 

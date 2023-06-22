@@ -118,8 +118,8 @@ for i in range(experiments):
                 fps_limit=0,
             )
         )
-            .batch_spawn_agents(n_fox, Fox, images=["images/white.png", "images/red.png"])
-            .batch_spawn_agents(n_rabbit, Rabbit, images=["images/white.png", "images/red.png"])
+            .batch_spawn_agents(n_fox, Fox, images=["/Users/ania/Desktop/Collective_Intelligence_Group_Ocean/images/white.png", "/Users/ania/Desktop/Collective_Intelligence_Group_Ocean/images/popular_cockroaches.png"])
+            .batch_spawn_agents(n_rabbit, Rabbit, images=["/Users/ania/Desktop/Collective_Intelligence_Group_Ocean/images/white.png", "/Users/ania/Desktop/Collective_Intelligence_Group_Ocean/images/popular_cockroaches.png"])
             .run()
             .snapshots
             # Get the number of animals per death cause per timeframe
